@@ -242,18 +242,6 @@ export default function OnboardingPage() {
           </div>
         </CardContent>
       </Card>
-      
-      {/* Debug Panel - Solo para demo */}
-      <Card className="mt-6 bg-gray-50">
-        <CardHeader>
-          <CardTitle className="text-sm">Debug - Datos capturados</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <pre className="text-xs overflow-auto">
-            {JSON.stringify(userData, null, 2)}
-          </pre>
-        </CardContent>
-      </Card>
     </div>
   );
 } 
