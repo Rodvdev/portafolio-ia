@@ -3,7 +3,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { mockWeeklySummary } from "@/data/mockData";
 
 export default function WeeklyPage() {
@@ -208,7 +207,7 @@ export default function WeeklyPage() {
             <div className="p-4 bg-gray-50 border rounded-lg">
               <p className="text-sm font-medium mb-2">Post sugerido para LinkedIn:</p>
               <p className="text-sm text-gray-700 italic">
-                "{mockWeeklySummary.shareableHighlights}"
+                &ldquo;{mockWeeklySummary.shareableHighlights}&rdquo;
               </p>
             </div>
             

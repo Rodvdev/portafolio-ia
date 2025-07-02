@@ -113,15 +113,16 @@ export default function DiagnosticPage() {
     }));
   };
 
-  const calculateScore = (testQuestions: any[]) => {
-    let correct = 0;
-    testQuestions.forEach(q => {
-      if (answers[q.id] && parseInt(answers[q.id]) === q.correct) {
-        correct++;
-      }
-    });
-    return Math.round((correct / testQuestions.length) * 100);
-  };
+  // Note: calculateScore function available if needed for scoring logic
+  // const calculateScore = (testQuestions: { id: string; correct: number }[]) => {
+  //   let correct = 0;
+  //   testQuestions.forEach(q => {
+  //     if (answers[q.id] && parseInt(answers[q.id]) === q.correct) {
+  //       correct++;
+  //     }
+  //   });
+  //   return Math.round((correct / testQuestions.length) * 100);
+  // };
 
   const nextTest = () => {
     if (currentTest < totalTests - 1) {
@@ -152,7 +153,7 @@ export default function DiagnosticPage() {
         </Card>
 
         <div className="grid gap-6">
-          {mockTestResults.map((result, index) => (
+          {mockTestResults.map((result) => (
             <Card key={result.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">

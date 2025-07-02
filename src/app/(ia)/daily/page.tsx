@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,24 @@ export default function DailyPage() {
     { emoji: "😰", label: "Ansioso", color: "bg-red-100 text-red-800" }
   ];
 
+  const handleTimerComplete = useCallback(() => {
+    setIsRunning(false);
+    setIsPaused(false);
+    
+    if (sessionType === 'work') {
+      setCompletedSessions(prev => prev + 1);
+      // Después de 4 sesiones de trabajo, break largo
+      const nextBreakTime = completedSessions % 4 === 3 ? 15 * 60 : 5 * 60;
+      setTimeLeft(nextBreakTime);
+      setSessionType('break');
+      alert(`¡Excelente! 🎉\nSesión de enfoque completada.\nToma un descanso de ${nextBreakTime === 15 * 60 ? '15' : '5'} minutos.`);
+    } else {
+      setTimeLeft(25 * 60);
+      setSessionType('work');
+      alert('¡Descanso terminado! 💪\n¿Listo para otra sesión de enfoque?');
+    }
+  }, [sessionType, completedSessions]);
+
   // Efecto para el cronómetro
   useEffect(() => {
     if (isRunning && !isPaused) {
@@ -54,25 +72,7 @@ export default function DailyPage() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, isPaused]);
-
-  const handleTimerComplete = () => {
-    setIsRunning(false);
-    setIsPaused(false);
-    
-    if (sessionType === 'work') {
-      setCompletedSessions(prev => prev + 1);
-      // Después de 4 sesiones de trabajo, break largo
-      const nextBreakTime = completedSessions % 4 === 3 ? 15 * 60 : 5 * 60;
-      setTimeLeft(nextBreakTime);
-      setSessionType('break');
-      alert(`¡Excelente! 🎉\nSesión de enfoque completada.\nToma un descanso de ${nextBreakTime === 15 * 60 ? '15' : '5'} minutos.`);
-    } else {
-      setTimeLeft(25 * 60);
-      setSessionType('work');
-      alert('¡Descanso terminado! 💪\n¿Listo para otra sesión de enfoque?');
-    }
-  };
+  }, [isRunning, isPaused, handleTimerComplete]);
 
   const startTimer = () => {
     setIsRunning(true);
@@ -83,9 +83,7 @@ export default function DailyPage() {
     setIsPaused(true);
   };
 
-  const resumeTimer = () => {
-    setIsPaused(false);
-  };
+
 
   const resetTimer = () => {
     setIsRunning(false);
