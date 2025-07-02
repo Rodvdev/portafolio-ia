@@ -22,10 +22,11 @@
 ### 🎯 **Objetivo V1 Legacy**
 - [ ] Sistema de usuarios real con persistencia
 - [ ] Base de datos completa con todas las entidades
-- [ ] IA real para feedback y análisis
+- [ ] **GraphQL API completo** con Apollo Server/Client
+- [ ] IA real para feedback y análisis vía GraphQL
 - [ ] Sistema de retos y validación automática
 - [ ] Autenticación y autorización
-- [ ] APIs funcionales para todas las operaciones
+- [ ] **Subscriptions en tiempo real** para updates
 - [ ] Sistema de progreso y analytics reales
 
 ---
@@ -84,7 +85,87 @@ export const authOptions: NextAuthOptions = {
 
 ---
 
-### 2. **Base de Datos y Persistencia** `Priority: CRITICAL`
+### 2. **Configuración GraphQL** `Priority: CRITICAL`
+**Tiempo estimado: 1-2 semanas**
+
+#### 📋 **Tareas**
+- [ ] **Apollo Server Setup**
+  - [ ] Instalar Apollo Server para Next.js 15
+  - [ ] Configurar endpoint `/api/graphql`
+  - [ ] Setup de context con autenticación
+  - [ ] Configurar playground para desarrollo
+
+- [ ] **Apollo Client Setup**
+  - [ ] Instalar Apollo Client en frontend
+  - [ ] Configurar cache inmutable
+  - [ ] Setup de error handling global
+  - [ ] Configurar subscriptions con WebSockets
+
+- [ ] **Schema Modular**
+  - [ ] Dividir schema por dominio (user, portfolio, ai, etc.)
+  - [ ] Schema stitching para unificar schemas
+  - [ ] Type generation automática
+  - [ ] Validación de schema en CI/CD
+
+#### 🔧 **Configuración Técnica**
+```typescript
+// /src/lib/apollo/server.ts
+import { ApolloServer } from '@apollo/server';
+import { startServerAndCreateNextHandler } from '@apollo/server/integrations/next';
+
+const server = new ApolloServer({
+  typeDefs: mergedTypeDefs,
+  resolvers: mergedResolvers,
+  plugins: [
+    ApolloServerPluginLandingPageLocalDefault({ embed: true }),
+  ],
+});
+
+export default startServerAndCreateNextHandler(server, {
+  context: async (req) => ({
+    session: await getServerSession(req, authOptions),
+    prisma,
+  }),
+});
+
+// /src/lib/apollo/client.ts
+import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
+import { setContext } from '@apollo/client/link/context';
+
+const httpLink = createHttpLink({
+  uri: '/api/graphql',
+});
+
+const authLink = setContext((_, { headers }) => {
+  return {
+    headers: {
+      ...headers,
+      // Add auth token here
+    }
+  }
+});
+
+export const apolloClient = new ApolloClient({
+  link: authLink.concat(httpLink),
+  cache: new InMemoryCache({
+    typePolicies: {
+      User: {
+        fields: {
+          portfolioItems: {
+            merge(existing = [], incoming) {
+              return incoming;
+            }
+          }
+        }
+      }
+    }
+  }),
+});
+```
+
+---
+
+### 3. **Base de Datos y Persistencia** `Priority: CRITICAL`
 **Tiempo estimado: 2-3 semanas**
 
 #### 📋 **Tareas**
@@ -109,10 +190,11 @@ export const authOptions: NextAuthOptions = {
   - [ ] Backup y restore procedures
 
 - [ ] **API Layer completo**
-  - [ ] CRUD operations para cada modelo
-  - [ ] Endpoints RESTful en `/api/`
-  - [ ] Validación de datos con Zod
-  - [ ] Manejo de errores consistente
+  - [ ] Queries y Mutations para cada modelo
+  - [ ] Resolvers y TypeDefs en `/api/graphql`
+  - [ ] Validación de datos con Zod en resolvers
+  - [ ] Schema stitching para modularidad
+  - [ ] DataLoader para optimización de consultas
 
 #### 🗄️ **Schema de Base de Datos**
 ```prisma
@@ -154,116 +236,216 @@ model ProfileDraft {
 
 ---
 
-### 3. **Sistema de APIs** `Priority: HIGH`
+### 4. **Sistema de GraphQL Avanzado** `Priority: HIGH`
 **Tiempo estimado: 2-3 semanas**
 
 #### 📋 **Tareas**
-- [ ] **API Routes para cada entidad**
-  - [ ] `/api/users/[id]` - CRUD de usuarios
-  - [ ] `/api/onboarding` - Proceso de onboarding
-  - [ ] `/api/diagnostic` - Tests y resultados
-  - [ ] `/api/portfolio` - Gestión de proyectos
-  - [ ] `/api/daily` - Logs diarios
-  - [ ] `/api/weekly` - Resúmenes semanales
-  - [ ] `/api/analytics` - Métricas y estadísticas
+- [ ] **GraphQL Schema y Resolvers**
+  - [ ] `/api/graphql` - Endpoint único de GraphQL
+  - [ ] Schema definitions para todas las entidades
+  - [ ] Resolvers para queries y mutations
+  - [ ] Subscriptions para updates en tiempo real
+  - [ ] Fragmentos reusables para el frontend
 
-- [ ] **Middleware y validación**
-  - [ ] Rate limiting
-  - [ ] Validación de schemas con Zod
-  - [ ] Manejo de errores HTTP
-  - [ ] Logging de requests
+- [ ] **GraphQL Middleware y validación**
+  - [ ] Rate limiting con graphql-rate-limit
+  - [ ] Validación de inputs con Zod en resolvers
+  - [ ] Error handling con GraphQL Error Extensions
+  - [ ] Logging de queries y mutations
+  - [ ] Authentication y authorization en resolvers
 
-- [ ] **Integración con Frontend**
-  - [ ] Crear custom hooks (`useUser`, `usePortfolio`, etc.)
-  - [ ] Context providers para estado global
-  - [ ] Optimistic updates
-  - [ ] Cache management
+- [ ] **Cliente GraphQL Frontend**
+  - [ ] Apollo Client setup con cache optimizado
+  - [ ] Custom hooks con GraphQL (`useUserQuery`, `usePortfolioMutation`, etc.)
+  - [ ] Optimistic updates con Apollo cache
+  - [ ] Subscriptions para real-time updates
+  - [ ] Error boundaries para GraphQL errors
 
-#### 🔌 **Ejemplo de API Route**
+#### 🔌 **Ejemplo de GraphQL Schema y Resolver**
 ```typescript
-// /src/app/api/portfolio/route.ts
-export async function GET(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    
-    const items = await prisma.portfolioItem.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' }
-    });
-    
-    return NextResponse.json(items);
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+// /src/lib/graphql/schema.ts
+export const typeDefs = gql`
+  type User {
+    id: ID!
+    email: String!
+    name: String
+    image: String
+    portfolioItems: [PortfolioItem!]!
+    dailyLogs: [DailyLog!]!
+    createdAt: DateTime!
   }
-}
+
+  type PortfolioItem {
+    id: ID!
+    title: String!
+    description: String!
+    category: Category!
+    level: Level!
+    feedback: String
+    user: User!
+  }
+
+  type Query {
+    me: User
+    portfolioItems: [PortfolioItem!]!
+    portfolioItem(id: ID!): PortfolioItem
+  }
+
+  type Mutation {
+    createPortfolioItem(input: CreatePortfolioItemInput!): PortfolioItem!
+    updatePortfolioItem(id: ID!, input: UpdatePortfolioItemInput!): PortfolioItem!
+  }
+
+  type Subscription {
+    portfolioItemUpdated(userId: ID!): PortfolioItem!
+  }
+`;
+
+// /src/lib/graphql/resolvers.ts
+export const resolvers = {
+  Query: {
+    me: async (parent, args, context) => {
+      if (!context.session) throw new GraphQLError('Unauthorized');
+      return await prisma.user.findUnique({
+        where: { id: context.session.user.id }
+      });
+    },
+    portfolioItems: async (parent, args, context) => {
+      if (!context.session) throw new GraphQLError('Unauthorized');
+      return await prisma.portfolioItem.findMany({
+        where: { userId: context.session.user.id },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+  },
+  
+  Mutation: {
+    createPortfolioItem: async (parent, { input }, context) => {
+      if (!context.session) throw new GraphQLError('Unauthorized');
+      return await prisma.portfolioItem.create({
+        data: { ...input, userId: context.session.user.id }
+      });
+    }
+  }
+};
 ```
 
 ---
 
 ## 🤖 **INTELIGENCIA ARTIFICIAL**
 
-### 4. **Sistema de IA para Feedback** `Priority: HIGH`
+### 5. **Sistema de IA para Feedback** `Priority: HIGH`
 **Tiempo estimado: 2-3 semanas**
 
 #### 📋 **Tareas**
 - [ ] **Integración con OpenAI API**
   - [ ] Setup de API keys y rate limits
   - [ ] Crear wrapper functions para diferentes casos de uso
+  - [ ] Integrar IA en GraphQL resolvers
   - [ ] Manejo de errores y fallbacks
 
-- [ ] **IA para Diagnósticos**
-  - [ ] Análisis automático de respuestas de tests
-  - [ ] Generación de feedback personalizado
-  - [ ] Identificación de fortalezas y debilidades
-  - [ ] Recomendaciones de rutas de aprendizaje
+- [ ] **IA para Diagnósticos (GraphQL)**
+  - [ ] Mutations para análisis automático de respuestas
+  - [ ] Queries para obtener feedback personalizado
+  - [ ] Subscriptions para updates de progreso en tiempo real
+  - [ ] Resolvers que integren OpenAI para recomendaciones
 
-- [ ] **IA para Portfolio**
-  - [ ] Evaluación automática de proyectos
-  - [ ] Feedback sobre calidad y completitud
-  - [ ] Sugerencias de mejora
-  - [ ] Generación de descripciones profesionales
+- [ ] **IA para Portfolio (GraphQL)**
+  - [ ] Mutations para evaluación automática de proyectos
+  - [ ] Queries para feedback sobre calidad y completitud
+  - [ ] Resolvers con IA para sugerencias de mejora
+  - [ ] Auto-generación de descripciones profesionales vía GraphQL
 
-- [ ] **IA para Seguimiento Diario**
-  - [ ] Análisis de mood y reflexiones
-  - [ ] Generación de insights semanales
-  - [ ] Identificación de patrones de comportamiento
-  - [ ] Sugerencias personalizadas de acciones
+- [ ] **IA para Seguimiento Diario (GraphQL)**
+  - [ ] Mutations para análisis de mood y reflexiones
+  - [ ] Queries para insights semanales generados por IA
+  - [ ] Subscriptions para notificaciones personalizadas
+  - [ ] Resolvers que identifiquen patrones de comportamiento
 
-#### 🧠 **Prompts y Templates**
+#### 🧠 **GraphQL Schema para IA**
 ```typescript
-// /src/lib/ai/prompts.ts
-export const DIAGNOSTIC_FEEDBACK_PROMPT = `
-Analiza las siguientes respuestas de un test de diagnóstico:
-{responses}
+// /src/lib/graphql/ai-schema.ts
+export const aiTypeDefs = gql`
+  type DiagnosticFeedback {
+    id: ID!
+    strengths: [String!]!
+    improvementAreas: [String!]!
+    recommendations: [String!]!
+    learningPath: String!
+    score: Float!
+  }
 
-Genera un feedback constructivo que incluya:
-1. Fortalezas identificadas (2-3 puntos)
-2. Áreas de mejora (2-3 puntos)
-3. Recomendaciones específicas de acción
-4. Ruta de aprendizaje sugerida
+  type PortfolioFeedback {
+    id: ID!
+    score: Float!
+    positiveAspects: [String!]!
+    improvements: [String!]!
+    nextSteps: [String!]!
+    generatedDescription: String!
+  }
 
-Mantén un tono motivacional y profesional.
+  type DailyInsight {
+    id: ID!
+    moodAnalysis: String!
+    behaviorPatterns: [String!]!
+    suggestions: [String!]!
+    motivationalMessage: String!
+  }
+
+  extend type Mutation {
+    generateDiagnosticFeedback(testResults: [TestResultInput!]!): DiagnosticFeedback!
+    evaluatePortfolioProject(projectId: ID!): PortfolioFeedback!
+    analyzeDailyReflection(reflection: String!, mood: String!): DailyInsight!
+  }
+
+  extend type Subscription {
+    aiProcessingUpdated(userId: ID!): AIProcessingStatus!
+  }
 `;
 
-export const PROJECT_EVALUATION_PROMPT = `
-Evalúa el siguiente proyecto de portafolio:
-Título: {title}
-Descripción: {description}
-Categoría: {category}
-Nivel: {level}
-
-Proporciona:
-1. Puntuación del 1-10 con justificación
-2. Aspectos positivos del proyecto
-3. Sugerencias específicas de mejora
-4. Próximos pasos recomendados
-`;
+// /src/lib/graphql/ai-resolvers.ts
+export const aiResolvers = {
+  Mutation: {
+    generateDiagnosticFeedback: async (parent, { testResults }, context) => {
+      if (!context.session) throw new GraphQLError('Unauthorized');
+      
+      const prompt = createDiagnosticPrompt(testResults);
+      const aiResponse = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" }
+      });
+      
+      const feedback = JSON.parse(aiResponse.choices[0].message.content);
+      
+      return await prisma.diagnosticFeedback.create({
+        data: {
+          ...feedback,
+          userId: context.session.user.id
+        }
+      });
+    },
+    
+    evaluatePortfolioProject: async (parent, { projectId }, context) => {
+      if (!context.session) throw new GraphQLError('Unauthorized');
+      
+      const project = await prisma.portfolioItem.findUnique({
+        where: { id: projectId }
+      });
+      
+      const evaluation = await evaluateWithAI(project);
+      
+      return await prisma.portfolioFeedback.create({
+        data: { ...evaluation, projectId }
+      });
+    }
+  }
+};
 ```
 
 ---
 
-### 5. **Sistema de Retos y Validación** `Priority: MEDIUM`
+### 6. **Sistema de Retos y Validación** `Priority: MEDIUM`
 **Tiempo estimado: 3-4 semanas**
 
 #### 📋 **Tareas**
@@ -324,7 +506,7 @@ interface Challenge {
 
 ## 📱 **EXPERIENCIA DE USUARIO**
 
-### 6. **Dashboard Analytics Real** `Priority: MEDIUM`
+### 7. **Dashboard Analytics Real** `Priority: MEDIUM`
 **Tiempo estimado: 1-2 semanas**
 
 #### 📋 **Tareas**
@@ -346,21 +528,77 @@ interface Challenge {
   - [ ] Predicciones de empleabilidad
   - [ ] Alertas de áreas que necesitan atención
 
-#### 📊 **Componentes de Analytics**
+#### 📊 **GraphQL para Analytics**
 ```typescript
-// /src/components/analytics/ProgressChart.tsx
-interface ProgressData {
-  date: string;
-  studyTime: number;
-  projectsCompleted: number;
-  skillsImproved: string[];
+// /src/lib/graphql/analytics-schema.ts
+export const analyticsTypeDefs = gql`
+  type ProgressData {
+    date: String!
+    studyTime: Int!
+    projectsCompleted: Int!
+    skillsImproved: [String!]!
+  }
+
+  type UserAnalytics {
+    totalStudyTime: Int!
+    projectsByCategory: [CategoryCount!]!
+    currentStreak: Int!
+    skillProgress: [SkillProgress!]!
+    weeklyProgress: [ProgressData!]!
+    monthlyInsights: [String!]!
+  }
+
+  type CategoryCount {
+    category: String!
+    count: Int!
+  }
+
+  type SkillProgress {
+    skill: String!
+    level: Float!
+    improvement: Float!
+  }
+
+  extend type Query {
+    userAnalytics: UserAnalytics!
+    progressData(timeRange: TimeRange!): [ProgressData!]!
+    skillComparison: SkillComparison!
+  }
+
+  extend type Subscription {
+    analyticsUpdated(userId: ID!): UserAnalytics!
+  }
+`;
+
+// /src/hooks/useAnalytics.ts
+export function useUserAnalytics() {
+  const { data, loading, error } = useQuery(GET_USER_ANALYTICS, {
+    pollInterval: 30000, // Update every 30 seconds
+  });
+
+  return {
+    analytics: data?.userAnalytics,
+    loading,
+    error,
+  };
 }
 
-export function ProgressChart({ data }: { data: ProgressData[] }) {
-  // Implementar con Recharts o Chart.js
+// /src/components/analytics/ProgressChart.tsx  
+export function ProgressChart() {
+  const { data } = useQuery(GET_PROGRESS_DATA, {
+    variables: { timeRange: 'LAST_30_DAYS' }
+  });
+
   return (
     <div className="w-full h-64">
-      {/* Gráfico de progreso temporal */}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data?.progressData}>
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Line dataKey="studyTime" stroke="#8884d8" />
+          <Line dataKey="projectsCompleted" stroke="#82ca9d" />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -368,7 +606,7 @@ export function ProgressChart({ data }: { data: ProgressData[] }) {
 
 ---
 
-### 7. **Sistema de Notificaciones** `Priority: MEDIUM`
+### 8. **Sistema de Notificaciones** `Priority: MEDIUM`
 **Tiempo estimado: 1-2 semanas**
 
 #### 📋 **Tareas**
@@ -401,7 +639,7 @@ export function ProgressChart({ data }: { data: ProgressData[] }) {
 
 ## 🎨 **MEJORAS DE UI/UX**
 
-### 8. **Editor de Proyectos Interactivo** `Priority: LOW`
+### 9. **Editor de Proyectos Interactivo** `Priority: LOW`
 **Tiempo estimado: 2-3 semanas**
 
 #### 📋 **Tareas**
@@ -425,7 +663,7 @@ export function ProgressChart({ data }: { data: ProgressData[] }) {
 
 ---
 
-### 9. **Gamificación Avanzada** `Priority: LOW`
+### 10. **Gamificación Avanzada** `Priority: LOW`
 **Tiempo estimado: 1-2 semanas**
 
 #### 📋 **Tareas**
@@ -451,7 +689,7 @@ export function ProgressChart({ data }: { data: ProgressData[] }) {
 
 ## 🔧 **INFRAESTRUCTURA Y DEVOPS**
 
-### 10. **Monitoreo y Analytics** `Priority: LOW`
+### 11. **Monitoreo y Analytics** `Priority: LOW`
 **Tiempo estimado: 1 semana**
 
 #### 📋 **Tareas**
@@ -474,7 +712,7 @@ export function ProgressChart({ data }: { data: ProgressData[] }) {
 
 ---
 
-### 11. **Testing y Calidad** `Priority: MEDIUM`
+### 12. **Testing y Calidad** `Priority: MEDIUM`
 **Tiempo estimado: 2 semanas**
 
 #### 📋 **Tareas**
@@ -502,13 +740,13 @@ export function ProgressChart({ data }: { data: ProgressData[] }) {
 
 ### **Fase 1: Fundación (Semanas 1-4)**
 1. **Semana 1-2**: Autenticación + Base de Datos
-2. **Semana 3**: APIs básicas (CRUD)
-3. **Semana 4**: Migración de mock data a DB real
+2. **Semana 3**: GraphQL Schema + Apollo Server setup
+3. **Semana 4**: Apollo Client + Migración de mock data a GraphQL
 
 ### **Fase 2: IA y Funcionalidad Core (Semanas 5-8)**
-5. **Semana 5-6**: Sistema de IA para feedback
-6. **Semana 7**: Dashboard analytics real
-7. **Semana 8**: Sistema de notificaciones
+5. **Semana 5-6**: Sistema de IA para feedback vía GraphQL
+6. **Semana 7**: Dashboard analytics con subscriptions
+7. **Semana 8**: Sistema de notificaciones en tiempo real
 
 ### **Fase 3: Polish y Optimización (Semanas 9-12)**
 9. **Semana 9-10**: Sistema de retos y validación
