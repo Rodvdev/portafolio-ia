@@ -4,10 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { mockPublicProfile } from "@/data/mockData";
+import { exportProfileToPDF } from "@/utilities/pdfExport";
 
 export default function ProfilePage() {
-  const exportToPDF = () => {
-    alert("Funcionalidad de exportación a PDF - En desarrollo 📄");
+  const exportToPDF = async () => {
+    try {
+      await exportProfileToPDF("profile-content", mockPublicProfile.fullName);
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      alert("Error al generar el PDF. Por favor, inténtalo de nuevo.");
+    }
   };
 
   const applyToJob = () => {
@@ -21,6 +27,8 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      {/* Contenedor con ID para exportación PDF */}
+      <div id="profile-content" className="space-y-6 bg-white p-6 rounded-lg">
       {/* Header del perfil */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
         <CardHeader>
@@ -194,7 +202,7 @@ export default function ProfilePage() {
                 GitHub 💻
               </Button>
             )}
-            <Button variant="outline">
+            <Button variant="outline" onClick={exportToPDF}>
               Descargar CV 📄
             </Button>
           </div>
@@ -261,6 +269,7 @@ export default function ProfilePage() {
           Validado a través de proyectos prácticos y feedback de inteligencia artificial
         </p>
       </div>
+      </div> {/* Cierre del contenedor profile-content */}
     </div>
   );
 } 
