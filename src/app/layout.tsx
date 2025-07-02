@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="antialiased bg-background text-foreground">
+      <body className="antialiased bg-gradient-to-br from-blue-50 to-indigo-100 text-foreground">
         <div className="min-h-screen">
           {children}
         </div>

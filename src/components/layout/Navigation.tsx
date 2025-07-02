@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utilities/ui";
 
 const navigationItems = [
-  { href: "/", label: "Inicio", icon: "🏠" },
+  { href: "/dashboard", label: "Dashboard", icon: "🏠" },
   { href: "/onboarding", label: "Onboarding", icon: "👋" },
   { href: "/diagnostic", label: "Diagnóstico", icon: "🧪" },
   { href: "/portfolio", label: "Portafolio", icon: "📁" },
