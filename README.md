@@ -11,6 +11,7 @@ npm run dev
 ```
 
 Luego visita `http://localhost:3000`
+Live demo:  `https://portafolio-ia-theta.vercel.app`
 
 ## 🚀 Características Implementadas
 
