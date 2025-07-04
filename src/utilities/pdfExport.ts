@@ -122,10 +122,10 @@ export const exportToPDF = async (
 
     // Agregar metadatos
     pdf.setProperties({
-      title: 'CV Profesional - Portafolio IA',
-      subject: 'Curriculum Vitae generado desde Portafolio IA',
-      author: 'Plataforma Portafolio IA',
-      creator: 'Portafolio IA - Sistema de Validación de Habilidades',
+      title: 'CV Profesional - Portafolio Pomodoro',
+      subject: 'Curriculum Vitae generado desde Portafolio Pomodoro',
+      author: 'Plataforma Portafolio Pomodoro',
+      creator: 'Portafolio Pomodoro - Sistema de Validación de Habilidades',
     });
 
     // Descargar el PDF

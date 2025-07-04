@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Portafolio IA - Plataforma para Estudiantes",
+  title: "Portafolio Pomodoro - Plataforma para Estudiantes",
   description: "Sistema modular para validar habilidades y generar portafolio profesional",
 };
 
