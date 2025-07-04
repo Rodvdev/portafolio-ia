@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CoachVirtual } from "@/components/ui/coach-virtual";
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 // Soft Skills focused data
 const softSkillsInterests = [
@@ -53,6 +54,22 @@ export default function OnboardingPage() {
     personalityTone: "",
     goals: ""
   });
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [profileGenerated, setProfileGenerated] = useState(false);
+  const [generatedProfile, setGeneratedProfile] = useState<{
+    name: string;
+    profileType: string;
+    topInterests: string[];
+    strongSkills: string[];
+    developmentAreas: string[];
+    personalityRecommendations: {
+      approach: string;
+      tips: string[];
+    };
+    nextSteps: string[];
+    estimatedJourneyTime: string;
+    coachingStyle: string;
+  } | null>(null);
 
   const progress = ((currentStep + 1) / TOTAL_STEPS) * 100;
 
@@ -85,6 +102,84 @@ export default function OnboardingPage() {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  // Función para generar el perfil personalizado
+  const generatePersonalizedProfile = () => {
+    const topInterests = userData.interests.slice(0, 3);
+    const strongSkills = Object.entries(userData.confidenceLevels)
+      .filter(([, level]) => level === 'Alto')
+      .map(([skill]) => skill);
+    const developmentAreas = Object.entries(userData.confidenceLevels)
+      .filter(([, level]) => level === 'Bajo')
+      .map(([skill]) => skill);
+
+    // Generar recomendaciones basadas en la personalidad
+    const getPersonalityRecommendations = (tone: string) => {
+      switch (tone) {
+        case "Optimista y Motivado":
+          return {
+            approach: "Enfoque energético con metas desafiantes",
+            tips: ["Lidera proyectos inspiradores", "Motiva a otros con tu energía", "Mantén el optimismo en crisis"]
+          };
+        case "Reflexivo y Analítico":
+          return {
+            approach: "Desarrollo profundo y estratégico",
+            tips: ["Analiza casos complejos", "Documenta tus reflexiones", "Busca patrones en tus interacciones"]
+          };
+        case "Colaborativo y Social":
+          return {
+            approach: "Crecimiento a través de la conexión humana",
+            tips: ["Facilita dinámicas de equipo", "Practica mediación", "Construye redes profesionales"]
+          };
+        default:
+          return {
+            approach: "Desarrollo equilibrado y constante",
+            tips: ["Establece rutinas de práctica", "Busca feedback regular", "Celebra pequeños logros"]
+          };
+      }
+    };
+
+    const personalityRec = getPersonalityRecommendations(userData.personalityTone);
+
+    return {
+      name: userData.name,
+      profileType: userData.personalityTone,
+      topInterests,
+      strongSkills,
+      developmentAreas,
+      personalityRecommendations: personalityRec,
+      nextSteps: [
+        "Completar evaluación de casos interactivos",
+        "Comenzar seguimiento diario de emociones",
+        "Establecer metas semanales de habilidades blandas"
+      ],
+      estimatedJourneyTime: "4-6 semanas para ver resultados significativos",
+      coachingStyle: personalityRec.approach
+    };
+  };
+
+  const handleFinish = async () => {
+    setIsCompleting(true);
+    
+    // Simular procesamiento del perfil
+    setTimeout(() => {
+      const profile = generatePersonalizedProfile();
+      setGeneratedProfile(profile);
+      
+      // Guardar en localStorage (en una app real sería en base de datos)
+      localStorage.setItem('userProfile', JSON.stringify(profile));
+      localStorage.setItem('onboardingCompleted', 'true');
+      localStorage.setItem('currentStep', 'diagnostic');
+      
+      setProfileGenerated(true);
+      setIsCompleting(false);
+    }, 2000);
+  };
+
+  const handleContinueToNext = () => {
+    // Redirigir al diagnóstico
+    window.location.href = '/diagnostic';
   };
 
   const renderStep = () => {
@@ -280,6 +375,271 @@ export default function OnboardingPage() {
           </div>
         );
 
+      case 4:
+        if (profileGenerated && generatedProfile) {
+          return (
+            <div className="space-y-8">
+              <div className="text-center space-y-4">
+                <div className="text-6xl mb-4 float-animation">🎉</div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                  ¡Tu Perfil está Listo!
+                </h2>
+                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  Hemos creado tu perfil personalizado de habilidades blandas
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Perfil Principal */}
+                <Card className="skill-card emotional-glow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-2xl">👤</span>
+                      Tu Perfil
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold text-gray-800">Hola, {generatedProfile.name}! 👋</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Tipo: <span className="font-medium text-purple-600">{generatedProfile.profileType}</span>
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-gray-800 mb-2">🎯 Tus intereses principales:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {generatedProfile.topInterests.map((interest: string, index: number) => (
+                          <Badge key={index} className="bg-blue-100 text-blue-800 text-xs">
+                            {interest}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {generatedProfile.strongSkills.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-gray-800 mb-2">💪 Tus fortalezas:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {generatedProfile.strongSkills.map((skill: string, index: number) => (
+                            <Badge key={index} className="bg-green-100 text-green-800 text-xs">
+                              ✓ {skill}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {generatedProfile.developmentAreas.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-gray-800 mb-2">🌱 Áreas de crecimiento:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {generatedProfile.developmentAreas.map((area: string, index: number) => (
+                            <Badge key={index} className="bg-orange-100 text-orange-800 text-xs">
+                              📈 {area}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Recomendaciones */}
+                <Card className="skill-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-2xl">🎯</span>
+                      Tu Plan Personalizado
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h4 className="font-medium text-gray-800 mb-2">🧠 Enfoque recomendado:</h4>
+                      <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded-lg">
+                        {generatedProfile.personalityRecommendations.approach}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-gray-800 mb-2">💡 Consejos personalizados:</h4>
+                      <div className="space-y-2">
+                        {generatedProfile.personalityRecommendations.tips.map((tip: string, index: number) => (
+                          <div key={index} className="flex items-start gap-2 text-sm">
+                            <span className="text-blue-500 mt-0.5">•</span>
+                            <span className="text-gray-700">{tip}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-gray-800 mb-2">⏱️ Tiempo estimado:</h4>
+                      <p className="text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
+                        {generatedProfile.estimatedJourneyTime}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Próximos Pasos */}
+              <Card className="skill-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-2xl">🚀</span>
+                    Tus Próximos Pasos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {generatedProfile.nextSteps.map((step: string, index: number) => (
+                      <div key={index} className="text-center p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                        <div className="text-2xl mb-2">
+                          {index === 0 ? '🎭' : index === 1 ? '💭' : '📈'}
+                        </div>
+                        <p className="text-sm font-medium text-gray-800">{step}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="text-center">
+                    <Button 
+                      size="lg" 
+                      onClick={handleContinueToNext}
+                      className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-8"
+                    >
+                      Comenzar Evaluación de Casos 🎭
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Tu perfil ha sido guardado y estará disponible en todo momento
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <CoachVirtual context="progress" className="animate-fade-in" />
+            </div>
+          );
+        }
+
+        if (isCompleting) {
+          return (
+            <div className="space-y-8">
+              <div className="text-center space-y-4">
+                <div className="text-6xl mb-4 animate-spin">⚙️</div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  Generando tu Perfil...
+                </h2>
+                <p className="text-lg text-gray-600 max-w-md mx-auto">
+                  Estamos analizando tus respuestas para crear tu experiencia personalizada
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <Progress value={85} className="h-3" />
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">
+                    Procesando tu personalidad y preferencias...
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg animate-pulse">
+                  <div className="text-2xl mb-2">🧠</div>
+                  <p className="text-sm font-medium">Analizando personalidad</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg animate-pulse">
+                  <div className="text-2xl mb-2">🎯</div>
+                  <p className="text-sm font-medium">Identificando fortalezas</p>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg animate-pulse">
+                  <div className="text-2xl mb-2">📋</div>
+                  <p className="text-sm font-medium">Creando plan personalizado</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-8">
+            <div className="text-center space-y-4">
+              <div className="text-6xl mb-4 float-animation">✨</div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Resumen de tu Journey
+              </h2>
+              <p className="text-lg text-gray-600 max-w-md mx-auto">
+                Revisa tu información antes de generar tu perfil personalizado
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="skill-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">📝 Tu información</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <span className="font-medium">Nombre:</span> {userData.name}
+                  </div>
+                  <div>
+                    <span className="font-medium">Personalidad:</span> {userData.personalityTone}
+                  </div>
+                  <div>
+                    <span className="font-medium">Intereses ({userData.interests.length}):</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {userData.interests.slice(0, 3).map((interest, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {interest}
+                        </Badge>
+                      ))}
+                      {userData.interests.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{userData.interests.length - 3} más
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="skill-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">💪 Autoevaluación</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {Object.entries(userData.confidenceLevels).map(([skill, level]) => (
+                    <div key={skill} className="flex justify-between items-center">
+                      <span className="text-sm">{skill}:</span>
+                      <Badge 
+                        className={`text-xs ${
+                          level === 'Alto' ? 'bg-green-100 text-green-800' :
+                          level === 'Medio' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {level}
+                      </Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="text-center">
+              <Button 
+                size="lg" 
+                onClick={handleFinish}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8"
+              >
+                Generar Mi Perfil Personalizado ✨
+              </Button>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -295,14 +655,11 @@ export default function OnboardingPage() {
         return Object.keys(userData.confidenceLevels).length >= 3;
       case 3:
         return userData.personalityTone !== "";
+      case 4:
+        return true; // El último paso siempre puede proceder
       default:
         return false;
     }
-  };
-
-  const handleFinish = () => {
-    alert("¡Onboarding completado! 🎉 Tu perfil ha sido creado exitosamente.");
-    // Aquí se guardarían los datos en la base de datos
   };
 
   return (
@@ -315,59 +672,51 @@ export default function OnboardingPage() {
                 Paso {currentStep + 1} de {TOTAL_STEPS}
               </Badge>
               <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                Autoconocimiento
+                {currentStep === 4 ? 'Perfil Completo' : 'Autoconocimiento'}
               </Badge>
             </div>
             <Progress value={progress} className="h-3 mb-4" />
             <CardDescription className="text-base">
-              Construyendo tu perfil de habilidades blandas
+              {currentStep === 4 ? 'Tu perfil personalizado de habilidades blandas' : 'Construyendo tu perfil de habilidades blandas'}
             </CardDescription>
           </CardHeader>
           
           <CardContent className="px-8 pb-8">
             {renderStep()}
             
-            <div className="flex justify-between items-center mt-8 pt-6 border-t">
-              <Button
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 0}
-                className="px-6"
-              >
-                ← Anterior
-              </Button>
-              
-              <div className="flex items-center gap-2">
-                {Array.from({ length: TOTAL_STEPS }).map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                      index <= currentStep 
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
-                        : 'bg-gray-200'
-                    }`}
-                  />
-                ))}
-              </div>
-              
-              {currentStep === TOTAL_STEPS - 1 ? (
+            {currentStep < 4 && (
+              <div className="flex justify-between items-center mt-8 pt-6 border-t">
                 <Button
-                  onClick={handleFinish}
-                  disabled={!canProceed()}
-                  className="px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 0}
+                  className="px-6"
                 >
-                  Finalizar ✨
+                  ← Anterior
                 </Button>
-              ) : (
+                
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: TOTAL_STEPS }).map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                        index <= currentStep 
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+                          : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                
                 <Button
                   onClick={nextStep}
                   disabled={!canProceed()}
                   className="px-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 >
-                  Siguiente →
+                  {currentStep === 3 ? 'Finalizar ✨' : 'Siguiente →'}
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
