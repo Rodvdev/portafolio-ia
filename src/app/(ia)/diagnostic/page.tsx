@@ -5,328 +5,461 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { mockDiagnosticResult, mockTestResults } from "@/data/mockData";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function DiagnosticPage() {
-  const [currentTest, setCurrentTest] = useState(0);
+  const [currentCase, setCurrentCase] = useState(0);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
+  const [explanations, setExplanations] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
 
-  const testData = [
+  // Casos interactivos de habilidades blandas
+  const softSkillsCases = [
     {
-      id: "finanzas",
-      title: "Análisis Financiero",
-      description: "Evalúa tu capacidad para interpretar estados financieros",
-      questions: [
-        {
-          id: "q1",
-          question: "¿Qué ratio indica mejor la liquidez a corto plazo de una empresa?",
-          options: [
-            "ROE (Return on Equity)",
-            "Ratio de liquidez corriente",
-            "Ratio de endeudamiento",
-            "Margen de utilidad neta"
-          ],
-          correct: 1
-        },
-        {
-          id: "q2", 
-          question: "Si una empresa tiene un flujo de caja negativo, significa que:",
-          options: [
-            "La empresa está en bancarrota",
-            "Los gastos superan los ingresos en efectivo",
-            "La empresa no es rentable",
-            "Todas las anteriores"
-          ],
-          correct: 1
-        }
-      ]
+      id: "communication",
+      title: "Comunicación en Crisis",
+      skill: "Comunicación",
+      icon: "💬",
+      scenario: "Eres el coordinador de un proyecto importante. El equipo acaba de descubrir un error crítico que podría retrasar la entrega por una semana. Tu jefe está en una reunión importante y el cliente espera una actualización en 30 minutos.",
+      question: "¿Cómo comunicas esta situación al cliente?",
+      options: [
+        "Espero a que mi jefe salga de la reunión para decidir juntos qué decir",
+        "Llamo inmediatamente al cliente, explico la situación con transparencia y propongo soluciones",
+        "Envío un email genérico diciendo que hay un 'pequeño retraso' sin dar detalles",
+        "Pido a un compañero que hable con el cliente porque no me siento preparado"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Esperar puede generar más desconfianza. La comunicación proactiva es clave en situaciones críticas.",
+        1: "¡Excelente! La transparencia y las soluciones proactivas construyen confianza, incluso en momentos difíciles.",
+        2: "Minimizar el problema puede dañar la relación a largo plazo. Los clientes valoran la honestidad.",
+        3: "Evitar la responsabilidad no resuelve el problema y puede afectar tu credibilidad profesional."
+      }
     },
     {
-      id: "marketing",
-      title: "Marketing Digital",
-      description: "Mide tu conocimiento en estrategias digitales",
-      questions: [
-        {
-          id: "q3",
-          question: "¿Qué métrica es más importante para medir el éxito de una campaña de awareness?",
-          options: [
-            "CTR (Click Through Rate)",
-            "Impresiones y alcance",
-            "Conversiones directas", 
-            "ROI inmediato"
-          ],
-          correct: 1
-        },
-        {
-          id: "q4",
-          question: "En el funnel de marketing, ¿cuál es la etapa TOFU?",
-          options: [
-            "Conversión final",
-            "Top of Funnel - Conciencia",
-            "Retención de clientes",
-            "Optimización de ventas"
-          ],
-          correct: 1
-        }
-      ]
+      id: "leadership",
+      title: "Liderazgo en Conflicto",
+      skill: "Liderazgo",
+      icon: "👑",
+      scenario: "Lideras un equipo de 5 personas. Dos miembros clave han tenido una fuerte discusión sobre la dirección del proyecto. El ambiente se ha vuelto tenso y está afectando la productividad de todo el equipo. Ambos son talentosos pero tienen personalidades muy diferentes.",
+      question: "Como líder, ¿cuál es tu primera acción?",
+      options: [
+        "Ignoro la situación esperando que se resuelva sola con el tiempo",
+        "Hablo por separado con cada uno para entender sus perspectivas antes de tomar acción",
+        "Llamo a una reunión grupal inmediatamente para resolver el conflicto públicamente",
+        "Tomo una decisión unilateral sobre el proyecto para evitar más conflictos"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Los conflictos no resueltos tienden a empeorar y afectar a todo el equipo.",
+        1: "¡Perfecto! Entender todas las perspectivas es fundamental para un liderazgo efectivo y resolución de conflictos.",
+        2: "Los conflictos públicos pueden intensificar las tensiones. Es mejor entender primero las perspectivas individuales.",
+        3: "Las decisiones unilaterales pueden resolver el síntoma pero no la causa raíz del conflicto."
+      }
     },
     {
-      id: "softskills",
-      title: "Habilidades Blandas",
-      description: "Evalúa tu capacidad de comunicación y liderazgo",
-      questions: [
-        {
-          id: "q5",
-          question: "Tu equipo tiene opiniones divididas sobre un proyecto. ¿Cuál es tu primera acción?",
-          options: [
-            "Imponer tu criterio como líder",
-            "Facilitar una reunión para escuchar todas las perspectivas",
-            "Delegar la decisión al más experimentado",
-            "Votar democráticamente"
-          ],
-          correct: 1
-        },
-        {
-          id: "q6",
-          question: "¿Cómo manejas el feedback negativo constructivo?",
-          options: [
-            "Lo tomo personal y me defiendo",
-            "Lo ignoro si no estoy de acuerdo",
-            "Agradezco, reflexiono y busco mejorar",
-            "Pido ejemplos específicos únicamente"
-          ],
-          correct: 2
-        }
-      ]
+      id: "empathy",
+      title: "Empatía en Acción",
+      skill: "Empatía",
+      icon: "💝",
+      scenario: "Un compañero de trabajo que siempre es puntual y eficiente ha llegado tarde tres veces esta semana. Su rendimiento ha bajado notablemente y parece distraído. Otros colegas han comenzado a comentar negativamente sobre su comportamiento.",
+      question: "¿Cómo manejas esta situación?",
+      options: [
+        "Me uno a los comentarios porque su comportamiento está afectando al equipo",
+        "Me acerco de manera privada para preguntarle si está todo bien y si necesita apoyo",
+        "Reporto inmediatamente su comportamiento a recursos humanos",
+        "Ignoro la situación porque no es mi responsabilidad"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Participar en comentarios negativos puede empeorar la situación y dañar la moral del equipo.",
+        1: "¡Excelente! La empatía y el apoyo pueden ayudar a identificar y resolver problemas subyacentes.",
+        2: "Reportar sin intentar entender primero puede ser prematuro y dañar la relación.",
+        3: "Mostrar preocupación por los colegas fortalece las relaciones y el ambiente laboral."
+      }
+    },
+    {
+      id: "adaptability",
+      title: "Adaptabilidad Bajo Presión",
+      skill: "Adaptabilidad",
+      icon: "🦋",
+      scenario: "Estás a mitad de un proyecto de 6 meses cuando la empresa decide cambiar completamente la tecnología que están usando. Esto significa que todo el trabajo realizado hasta ahora debe ser replanteado. El equipo está frustrado y algunos consideran renunciar.",
+      question: "¿Cómo respondes a este cambio?",
+      options: [
+        "Me resisto al cambio y trato de convencer a la gerencia de mantener el enfoque original",
+        "Acepto el cambio y me enfoco en encontrar formas de aprovechar el trabajo ya realizado",
+        "Me quejo constantemente sobre lo injusto de la situación",
+        "Busco inmediatamente otro trabajo porque no me gustan los cambios"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Resistirse al cambio puede limitar oportunidades de crecimiento y innovación.",
+        1: "¡Perfecto! La adaptabilidad positiva y la búsqueda de soluciones son clave en entornos dinámicos.",
+        2: "Quejarse constantemente puede afectar la moral del equipo y tu reputación profesional.",
+        3: "Evitar los cambios puede limitar tu desarrollo profesional en un mundo laboral dinámico."
+      }
     }
   ];
 
-  const currentTestData = testData[currentTest];
-  const totalTests = testData.length;
-  const progress = ((currentTest + 1) / totalTests) * 100;
+  const currentCaseData = softSkillsCases[currentCase];
+  const totalCases = softSkillsCases.length;
+  const progress = ((currentCase + 1) / totalCases) * 100;
 
-  const handleAnswer = (questionId: string, answerIndex: number) => {
-    setAnswers(prev => ({
+  const handleOptionSelect = (optionIndex: number) => {
+    setSelectedOptions(prev => ({
       ...prev,
-      [questionId]: answerIndex.toString()
+      [currentCaseData.id]: optionIndex
     }));
   };
 
-  // Note: calculateScore function available if needed for scoring logic
-  // const calculateScore = (testQuestions: { id: string; correct: number }[]) => {
-  //   let correct = 0;
-  //   testQuestions.forEach(q => {
-  //     if (answers[q.id] && parseInt(answers[q.id]) === q.correct) {
-  //       correct++;
-  //     }
-  //   });
-  //   return Math.round((correct / testQuestions.length) * 100);
-  // };
+  const handleExplanationChange = (value: string) => {
+    setExplanations(prev => ({
+      ...prev,
+      [currentCaseData.id]: value
+    }));
+  };
 
-  const nextTest = () => {
-    if (currentTest < totalTests - 1) {
-      setCurrentTest(currentTest + 1);
+  const nextCase = () => {
+    if (currentCase < totalCases - 1) {
+      setCurrentCase(currentCase + 1);
     } else {
       setShowResults(true);
     }
   };
 
-  const prevTest = () => {
-    if (currentTest > 0) {
-      setCurrentTest(currentTest - 1);
+  const prevCase = () => {
+    if (currentCase > 0) {
+      setCurrentCase(currentCase - 1);
     }
   };
 
+  const calculateResults = () => {
+    const results = softSkillsCases.map(caseData => {
+      const selectedOption = selectedOptions[caseData.id];
+      const isCorrect = selectedOption === caseData.correct;
+      const score = isCorrect ? 100 : Math.max(0, 100 - Math.abs(selectedOption - caseData.correct) * 25);
+      
+      return {
+        skill: caseData.skill,
+        icon: caseData.icon,
+        score,
+        isCorrect,
+                 feedback: caseData.feedback[selectedOption as keyof typeof caseData.feedback] || "No se seleccionó una opción",
+        explanation: explanations[caseData.id] || "Sin explicación proporcionada"
+      };
+    });
+
+    return results;
+  };
+
+  const canProceed = () => {
+    const hasSelectedOption = selectedOptions[currentCaseData.id] !== undefined;
+    const hasExplanation = explanations[currentCaseData.id]?.trim() !== "";
+    return hasSelectedOption && hasExplanation;
+  };
+
   if (showResults) {
+    const results = calculateResults();
+    const averageScore = results.reduce((sum, result) => sum + result.score, 0) / results.length;
+    const strongSkills = results.filter(r => r.score >= 80);
+    const developmentAreas = results.filter(r => r.score < 60);
+
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🎉 Resultados del Diagnóstico
-            </CardTitle>
-            <CardDescription>
-              Aquí tienes tu perfil de habilidades personalizado
-            </CardDescription>
-          </CardHeader>
-        </Card>
-
-        <div className="grid gap-6">
-          {mockTestResults.map((result) => (
-            <Card key={result.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{result.area}</CardTitle>
-                  <Badge variant={result.score >= 80 ? "default" : result.score >= 60 ? "secondary" : "destructive"}>
-                    {result.score}%
-                  </Badge>
-                </div>
-                <Progress value={result.score} className="mt-2" />
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium text-green-700 mb-2">💪 Fortalezas</h4>
-                    <ul className="text-sm space-y-1">
-                      {result.strengths.map((strength, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <span className="text-green-500">✓</span>
-                          {strength}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-blue-700 mb-2">🎯 Áreas de Mejora</h4>
-                    <ul className="text-sm space-y-1">
-                      {result.improvementAreas.map((area, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <span className="text-blue-500">→</span>
-                          {area}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>🗺️ Rutas Recomendadas</CardTitle>
-            <CardDescription>
-              Basado en tus resultados, te sugerimos estos caminos de desarrollo
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {mockDiagnosticResult.recommendedPaths.map((path, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
-                  <div className="text-2xl">
-                    {index === 0 ? '🏆' : index === 1 ? '🚀' : '💡'}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium">{path}</h4>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    Comenzar
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <h3 className="text-lg font-medium">¿Listo para el siguiente paso?</h3>
-              <p className="text-gray-600">
-                Comienza a construir tu portafolio con retos prácticos
-              </p>
-              <Button size="lg" onClick={() => window.location.href = '/portfolio'}>
-                Ir al Portafolio 📁
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-3xl mx-auto">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Diagnóstico Personalizado</CardTitle>
-              <CardDescription>
-                Test {currentTest + 1} de {totalTests}: {currentTestData.title}
-              </CardDescription>
-            </div>
-            <Badge variant="secondary">
-              {Math.round(progress)}%
-            </Badge>
-          </div>
-          <Progress value={progress} className="mt-4" />
-        </CardHeader>
-
-        <CardContent className="pt-6">
-          <div className="text-center mb-8">
-            <h2 className="text-xl font-bold mb-2">{currentTestData.title}</h2>
-            <p className="text-gray-600">{currentTestData.description}</p>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            <div className="text-6xl mb-4 float-animation">🎯</div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              Resultados de tu Evaluación
+            </h1>
+            <p className="text-xl text-gray-600">
+              Descubre tus fortalezas y áreas de crecimiento en habilidades blandas
+            </p>
           </div>
 
-          <div className="space-y-6">
-            {currentTestData.questions.map((question, qIndex) => (
-              <Card key={question.id} className="border-2">
+          {/* Score Overview */}
+          <Card className="skill-card emotional-glow">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Tu Puntuación General</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center space-y-4">
+                <div className="text-6xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                  {Math.round(averageScore)}%
+                </div>
+                <div className="coach-message">
+                  <p className="text-blue-800 font-medium">
+                    🤖 &ldquo;Has demostrado un gran potencial en habilidades blandas. 
+                    Tus respuestas muestran reflexión y comprensión de situaciones complejas.&rdquo;
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Detailed Results */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {results.map((result, index) => (
+              <Card key={index} className="skill-card">
                 <CardHeader>
-                  <CardTitle className="text-base">
-                    Pregunta {qIndex + 1}: {question.question}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl">{result.icon}</div>
+                      <div>
+                        <CardTitle className="text-lg">{result.skill}</CardTitle>
+                        <CardDescription>Caso {index + 1}</CardDescription>
+                      </div>
+                    </div>
+                    <Badge className={`${
+                      result.score >= 80 ? 'bg-green-100 text-green-800' :
+                      result.score >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {result.score}%
+                    </Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    {question.options.map((option, optIndex) => (
-                      <Button
-                        key={optIndex}
-                        variant={answers[question.id] === optIndex.toString() ? "default" : "outline"}
-                        onClick={() => handleAnswer(question.id, optIndex)}
-                        className="w-full h-auto py-3 text-left justify-start"
-                      >
-                        <span className="mr-3 font-bold">
-                          {String.fromCharCode(65 + optIndex)}.
-                        </span>
-                        {option}
-                      </Button>
-                    ))}
+                  <div className="space-y-3">
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Feedback:</strong> {result.feedback}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <strong>Tu explicación:</strong> {result.explanation}
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          <div className="flex justify-between pt-6 mt-6 border-t">
-            <Button
-              variant="outline"
-              onClick={prevTest}
-              disabled={currentTest === 0}
-            >
-              Test Anterior
-            </Button>
+          {/* Strengths and Development Areas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">💪</span>
+                  Fortalezas Identificadas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {strongSkills.length > 0 ? (
+                    strongSkills.map((skill, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                        <div className="text-xl">{skill.icon}</div>
+                        <div>
+                          <div className="font-medium text-green-800">{skill.skill}</div>
+                          <div className="text-sm text-green-600">{skill.score}% - Excelente desempeño</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-600">Todas las habilidades tienen potencial de crecimiento</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-            <Button
-              onClick={nextTest}
-              disabled={currentTestData.questions.some(q => !answers[q.id])}
-            >
-              {currentTest === totalTests - 1 ? 'Ver Resultados' : 'Siguiente Test'}
-            </Button>
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">🌱</span>
+                  Áreas de Crecimiento
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {developmentAreas.length > 0 ? (
+                    developmentAreas.map((skill, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
+                        <div className="text-xl">{skill.icon}</div>
+                        <div>
+                          <div className="font-medium text-orange-800">{skill.skill}</div>
+                          <div className="text-sm text-orange-600">Gran potencial de desarrollo</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-600">¡Excelente! Todas las habilidades están bien desarrolladas</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Progress Summary */}
-      <Card className="mt-6 bg-gray-50">
-        <CardHeader>
-          <CardTitle className="text-sm">Progreso Actual</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            {testData.map((test, index) => (
-              <div key={test.id} className={`p-2 rounded ${index <= currentTest ? 'bg-green-100' : 'bg-gray-100'}`}>
-                <div className="text-sm font-medium">{test.title}</div>
-                <div className="text-xs text-gray-600">
-                  {index < currentTest ? '✅ Completado' : index === currentTest ? '🔄 En progreso' : '⏳ Pendiente'}
+          {/* Next Steps */}
+          <Card className="skill-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">🚀</span>
+                Próximos Pasos Recomendados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-3xl mb-2">🏆</div>
+                    <h3 className="font-semibold text-purple-800">Construye tu Portafolio</h3>
+                    <p className="text-sm text-purple-600 mt-1">
+                      Valida tus habilidades con casos prácticos
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-3xl mb-2">💭</div>
+                    <h3 className="font-semibold text-blue-800">Reflexión Diaria</h3>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Desarrolla autoconciencia emocional
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-3xl mb-2">📈</div>
+                    <h3 className="font-semibold text-green-800">Seguimiento Semanal</h3>
+                    <p className="text-sm text-green-600 mt-1">
+                      Monitorea tu progreso continuo
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <Button 
+                    size="lg" 
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8"
+                    onClick={() => window.location.href = '/portfolio'}
+                  >
+                    Comenzar Portafolio Humano 🏆
+                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <Card className="skill-card emotional-glow">
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-between mb-4">
+              <Badge variant="outline" className="text-purple-600 border-purple-300">
+                Caso {currentCase + 1} de {totalCases}
+              </Badge>
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                {currentCaseData.skill}
+              </Badge>
+            </div>
+            <Progress value={progress} className="h-3 mb-4" />
+            <div className="space-y-2">
+              <div className="text-4xl">{currentCaseData.icon}</div>
+              <CardTitle className="text-2xl">{currentCaseData.title}</CardTitle>
+              <CardDescription className="text-base">
+                Caso interactivo de {currentCaseData.skill.toLowerCase()}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="px-8 pb-8">
+            <div className="space-y-6">
+              {/* Scenario */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
+                <h3 className="font-semibold text-lg mb-3 text-gray-800">📖 Situación</h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {currentCaseData.scenario}
+                </p>
+              </div>
+
+              {/* Question */}
+              <div className="bg-gradient-to-r from-orange-50 to-pink-50 p-6 rounded-xl border border-orange-200">
+                <h3 className="font-semibold text-lg mb-3 text-gray-800">❓ Pregunta</h3>
+                <p className="text-gray-700 font-medium">
+                  {currentCaseData.question}
+                </p>
+              </div>
+
+              {/* Options */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg text-gray-800">Selecciona tu respuesta:</h3>
+                {currentCaseData.options.map((option, index) => (
+                  <Button
+                    key={index}
+                    variant={selectedOptions[currentCaseData.id] === index ? "default" : "outline"}
+                    onClick={() => handleOptionSelect(index)}
+                    className={`w-full h-auto p-4 text-left justify-start transition-all duration-200 ${
+                      selectedOptions[currentCaseData.id] === index
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                        : 'hover:shadow-md hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="text-lg font-bold">
+                        {String.fromCharCode(65 + index)}
+                      </div>
+                      <div className="text-sm leading-relaxed">
+                        {option}
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+
+              {/* Explanation */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg text-gray-800">
+                  💭 Explica tu razonamiento:
+                </h3>
+                <Textarea
+                  placeholder="¿Por qué elegiste esta opción? ¿Qué factores consideraste en tu decisión? ¿Cómo crees que tu respuesta demuestra esta habilidad blanda?"
+                  value={explanations[currentCaseData.id] || ""}
+                  onChange={(e) => handleExplanationChange(e.target.value)}
+                  rows={4}
+                  className="text-base"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center mt-8 pt-6 border-t">
+              <Button
+                variant="outline"
+                onClick={prevCase}
+                disabled={currentCase === 0}
+                className="px-6"
+              >
+                ← Anterior
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalCases }).map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                      index <= currentCase 
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+                        : 'bg-gray-200'
+                    }`}
+                  />
+                ))}
+              </div>
+              
+              <Button
+                onClick={nextCase}
+                disabled={!canProceed()}
+                className="px-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              >
+                {currentCase === totalCases - 1 ? 'Ver Resultados ✨' : 'Siguiente →'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 } 

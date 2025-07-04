@@ -6,16 +6,40 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { mockDailyLogs } from "@/data/mockData";
+import { CoachVirtual } from "@/components/ui/coach-virtual";
 import { format } from "date-fns";
+
+// Mock data for daily logs
+const mockDailyLogs = [
+  {
+    id: "1",
+    date: "2024-01-15",
+    mood: "Motivado",
+    reflection: "Hoy tuve una conversación difícil con un compañero, pero logré mantener la calma y encontrar una solución que funcionó para ambos. Me siento orgulloso de cómo manejé mi inteligencia emocional.",
+    microHabits: ["Practicó escucha activa", "Mantuvo la calma bajo presión", "Buscó soluciones colaborativas"],
+    emotionalInsights: ["Mejoró gestión de conflictos", "Desarrolló paciencia"],
+    energyLevel: 8
+  },
+  {
+    id: "2", 
+    date: "2024-01-14",
+    mood: "Reflexivo",
+    reflection: "Reflexioné sobre mi estilo de comunicación después de una presentación. Noté que puedo mejorar en hacer más preguntas para involucrar a la audiencia.",
+    microHabits: ["Autoevaluación post-presentación", "Identificó áreas de mejora"],
+    emotionalInsights: ["Desarrolló autoconciencia", "Creció en humildad"],
+    energyLevel: 6
+  }
+];
 
 export default function DailyPage() {
   const [currentMood, setCurrentMood] = useState("");
   const [reflection, setReflection] = useState("");
+  const [selectedMicroHabits, setSelectedMicroHabits] = useState<string[]>([]);
+  const [energyLevel, setEnergyLevel] = useState(5);
   const [showHistory, setShowHistory] = useState(false);
   
   // Estado del cronómetro Pomodoro
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutos en segundos
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [sessionType, setSessionType] = useState<'work' | 'break'>('work');
@@ -23,78 +47,100 @@ export default function DailyPage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const moods = [
-    { emoji: "😊", label: "Motivado", color: "bg-green-100 text-green-800" },
-    { emoji: "🤔", label: "Reflexivo", color: "bg-blue-100 text-blue-800" },
-    { emoji: "😤", label: "Desafiado", color: "bg-orange-100 text-orange-800" },
-    { emoji: "😴", label: "Cansado", color: "bg-gray-100 text-gray-800" },
-    { emoji: "🚀", label: "Productivo", color: "bg-purple-100 text-purple-800" },
-    { emoji: "😰", label: "Ansioso", color: "bg-red-100 text-red-800" }
+    { emoji: "🌟", label: "Motivado", color: "bg-yellow-100 text-yellow-800", description: "Lleno de energía y optimismo" },
+    { emoji: "🧠", label: "Reflexivo", color: "bg-blue-100 text-blue-800", description: "Pensativo y analítico" },
+    { emoji: "💪", label: "Determinado", color: "bg-purple-100 text-purple-800", description: "Enfocado en mis metas" },
+    { emoji: "🤝", label: "Colaborativo", color: "bg-green-100 text-green-800", description: "Conectado con otros" },
+    { emoji: "🌱", label: "En crecimiento", color: "bg-emerald-100 text-emerald-800", description: "Aprendiendo y mejorando" },
+    { emoji: "😌", label: "Tranquilo", color: "bg-gray-100 text-gray-800", description: "En paz y equilibrio" },
+    { emoji: "🔥", label: "Inspirado", color: "bg-orange-100 text-orange-800", description: "Creativo y motivado" },
+    { emoji: "🤔", label: "Curioso", color: "bg-indigo-100 text-indigo-800", description: "Explorando nuevas ideas" }
   ];
 
-  const handleTimerComplete = useCallback(() => {
-    setIsRunning(false);
-    setIsPaused(false);
+  const microHabits = [
+    { id: "active_listening", label: "Practiqué escucha activa", icon: "👂", category: "Comunicación" },
+    { id: "empathy_moment", label: "Mostré empatía genuina", icon: "💝", category: "Empatía" },
+    { id: "calm_under_pressure", label: "Mantuve la calma bajo presión", icon: "🧘", category: "Resiliencia" },
+    { id: "asked_feedback", label: "Pedí feedback constructivo", icon: "🔄", category: "Crecimiento" },
+    { id: "helped_colleague", label: "Ayudé a un compañero", icon: "🤝", category: "Colaboración" },
+    { id: "creative_solution", label: "Propuse una solución creativa", icon: "💡", category: "Creatividad" },
+    { id: "led_by_example", label: "Lideré con el ejemplo", icon: "🌟", category: "Liderazgo" },
+    { id: "adapted_to_change", label: "Me adapté a un cambio", icon: "🦋", category: "Adaptabilidad" },
+    { id: "positive_mindset", label: "Mantuve actitud positiva", icon: "😊", category: "Optimismo" },
+    { id: "learned_something", label: "Aprendí algo nuevo", icon: "📚", category: "Aprendizaje" }
+  ];
+
+  const reflectionPrompts = [
+    "¿Qué situación me retó emocionalmente hoy y cómo la manejé?",
+    "¿En qué momento sentí que mis habilidades blandas marcaron la diferencia?",
+    "¿Qué aprendí sobre mí mismo en mis interacciones con otros?",
+    "¿Cómo puedo aplicar lo que viví hoy para crecer profesionalmente?",
+    "¿Qué patrón emocional noté en mí que quiero desarrollar más?"
+  ];
+
+  const [currentPrompt] = useState(
+    reflectionPrompts[Math.floor(Math.random() * reflectionPrompts.length)]
+  );
+
+  // Pomodoro functions (keeping existing logic)
+  const startTimer = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
     
-    if (sessionType === 'work') {
-      setCompletedSessions(prev => prev + 1);
-      // Después de 4 sesiones de trabajo, break largo
-      const nextBreakTime = completedSessions % 4 === 3 ? 15 * 60 : 5 * 60;
-      setTimeLeft(nextBreakTime);
-      setSessionType('break');
-      alert(`¡Excelente! 🎉\nSesión de enfoque completada.\nToma un descanso de ${nextBreakTime === 15 * 60 ? '15' : '5'} minutos.`);
-    } else {
-      setTimeLeft(25 * 60);
-      setSessionType('work');
-      alert('¡Descanso terminado! 💪\n¿Listo para otra sesión de enfoque?');
-    }
+    intervalRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          setIsRunning(false);
+          setIsPaused(false);
+          
+          if (sessionType === 'work') {
+            setCompletedSessions(prev => prev + 1);
+            const newSessionCount = completedSessions + 1;
+            if (newSessionCount % 4 === 0) {
+              setTimeLeft(15 * 60); // Long break
+              setSessionType('break');
+            } else {
+              setTimeLeft(5 * 60); // Short break
+              setSessionType('break');
+            }
+          } else {
+            setTimeLeft(25 * 60); // Work session
+            setSessionType('work');
+          }
+          
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    setIsRunning(true);
+    setIsPaused(false);
   }, [sessionType, completedSessions]);
 
-  // Efecto para el cronómetro
-  useEffect(() => {
-    if (isRunning && !isPaused) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleTimerComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+  const pauseTimer = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
+    setIsRunning(false);
+    setIsPaused(true);
+  };
 
+  const resetTimer = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    setIsRunning(false);
+    setIsPaused(false);
+    setTimeLeft(sessionType === 'work' ? 25 * 60 : (completedSessions % 4 === 0 ? 15 * 60 : 5 * 60));
+  };
+
+  useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, isPaused, handleTimerComplete]);
-
-  const startTimer = () => {
-    setIsRunning(true);
-    setIsPaused(false);
-  };
-
-  const pauseTimer = () => {
-    setIsPaused(true);
-  };
-
-
-
-  const resetTimer = () => {
-    setIsRunning(false);
-    setIsPaused(false);
-    if (sessionType === 'work') {
-      setTimeLeft(25 * 60);
-    } else {
-      const breakTime = completedSessions % 4 === 0 ? 15 * 60 : 5 * 60;
-      setTimeLeft(breakTime);
-    }
-  };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -108,298 +154,375 @@ export default function DailyPage() {
     return ((totalTime - timeLeft) / totalTime) * 100;
   };
 
+  const handleMicroHabitToggle = (habitId: string) => {
+    setSelectedMicroHabits(prev => 
+      prev.includes(habitId) 
+        ? prev.filter(id => id !== habitId)
+        : [...prev, habitId]
+    );
+  };
+
   const handleSaveEntry = () => {
-    if (!currentMood || !reflection) {
-      alert("Por favor completa tanto tu estado de ánimo como tu reflexión");
+    if (!currentMood || !reflection.trim()) {
+      alert("Por favor completa tu estado emocional y reflexión");
       return;
     }
     
-    alert("¡Entrada guardada exitosamente! 🎉");
+    alert("¡Entrada guardada exitosamente! 🎉 Tu crecimiento emocional ha sido registrado.");
     setCurrentMood("");
     setReflection("");
+    setSelectedMicroHabits([]);
+    setEnergyLevel(5);
   };
+
+  const canSave = currentMood && reflection.trim() && selectedMicroHabits.length > 0;
 
   if (showHistory) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  📚 Historial de Reflexiones
-                </CardTitle>
-                <CardDescription>
-                  Tu journey de aprendizaje día a día
-                </CardDescription>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50">
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+          <Card className="skill-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    📚 Tu Journey Emocional
+                  </CardTitle>
+                  <CardDescription>
+                    El registro de tu crecimiento en habilidades blandas
+                  </CardDescription>
+                </div>
+                <Button variant="outline" onClick={() => setShowHistory(false)}>
+                  Nueva Reflexión
+                </Button>
               </div>
-              <Button variant="outline" onClick={() => setShowHistory(false)}>
-                Nueva Entrada
-              </Button>
-            </div>
-          </CardHeader>
-        </Card>
+            </CardHeader>
+          </Card>
 
-        <div className="space-y-4">
-          {mockDailyLogs.map((log) => (
-            <Card key={log.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="text-lg">
-                      {moods.find(m => m.label === log.mood)?.emoji || "🤔"}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {mockDailyLogs.map((log) => (
+              <Card key={log.id} className="skill-card">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">
+                        {moods.find(m => m.label === log.mood)?.emoji || "🤔"}
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{log.mood}</CardTitle>
+                        <CardDescription>
+                          {format(new Date(log.date), "dd/MM/yyyy")}
+                        </CardDescription>
+                      </div>
                     </div>
+                    <div className="text-center">
+                      <div className="text-sm text-gray-600">Energía</div>
+                      <div className="text-lg font-bold text-purple-600">{log.energyLevel}/10</div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
                     <div>
-                      <CardTitle className="text-lg">{log.mood}</CardTitle>
-                      <CardDescription>
-                        {format(new Date(log.date), "dd/MM/yyyy")}
-                      </CardDescription>
+                      <h4 className="font-medium mb-2 text-gray-800">💭 Reflexión</h4>
+                      <p className="text-gray-700 bg-gray-50 p-3 rounded-lg text-sm leading-relaxed">
+                        {log.reflection}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium mb-2 text-gray-800">🌱 Micro-hábitos practicados</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {log.microHabits.map((habit, index) => (
+                          <Badge key={index} className="bg-green-100 text-green-800 text-xs">
+                            ✓ {habit}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium mb-2 text-gray-800">🧠 Insights emocionales</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {log.emotionalInsights.map((insight, index) => (
+                          <Badge key={index} className="bg-blue-100 text-blue-800 text-xs">
+                            💡 {insight}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <Badge variant="secondary">
-                    {log.actionsSuggested.length} sugerencias
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">💭 Reflexión del día</h4>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
-                      {log.reflection}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium mb-2">🎯 Sugerencias IA</h4>
-                    <div className="space-y-2">
-                      {log.actionsSuggested.map((action, index) => (
-                        <div key={index} className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg">
-                          <div className="text-blue-600">→</div>
-                          <div className="text-sm text-blue-800">{action}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                📔 Diario de Aprendizaje
-              </CardTitle>
-              <CardDescription>
-                Reflexiona sobre tu progreso diario
-              </CardDescription>
-            </div>
-            <Button variant="outline" onClick={() => setShowHistory(true)}>
-              Ver Historial
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="text-6xl mb-4 float-animation">💭</div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            Reflexión Diaria
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Conecta con tus emociones y desarrolla tu inteligencia emocional
+          </p>
+          <Button variant="outline" onClick={() => setShowHistory(true)}>
+            Ver Mi Journey 📚
+          </Button>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>¿Cómo te sientes hoy?</CardTitle>
-          <CardDescription>
-            Selecciona tu estado de ánimo actual
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {moods.map((mood) => (
-              <Button
-                key={mood.label}
-                variant={currentMood === mood.label ? "default" : "outline"}
-                onClick={() => setCurrentMood(mood.label)}
-                className="h-auto py-4 flex flex-col gap-2"
-              >
-                <div className="text-2xl">{mood.emoji}</div>
-                <div className="text-sm">{mood.label}</div>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        {/* Coach Virtual */}
+        <CoachVirtual context="daily" className="animate-fade-in" />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Reflexión del día</CardTitle>
-          <CardDescription>
-            Comparte tus aprendizajes, retos y pensamientos
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Textarea
-              placeholder="¿Qué aprendiste hoy? ¿Qué retos enfrentaste? ¿Cómo te sientes sobre tu progreso?"
-              value={reflection}
-              onChange={(e) => setReflection(e.target.value)}
-              rows={6}
-            />
-            
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">💡 Preguntas guía</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• ¿Qué concepto nuevo aprendiste?</li>
-                <li>• ¿Qué habilidad practicaste?</li>
-                <li>• ¿Con qué dificultades te encontraste?</li>
-                <li>• ¿Cómo aplicarías lo aprendido?</li>
-                <li>• ¿Qué quieres mejorar mañana?</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Reflection Area */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Mood Selection */}
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🌈 ¿Cómo te sientes hoy?
+                </CardTitle>
+                <CardDescription>
+                  Selecciona el estado emocional que mejor te describe
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {moods.map((mood) => (
+                    <div
+                      key={mood.label}
+                      className={`mood-selector ${currentMood === mood.label ? 'active' : ''}`}
+                      onClick={() => setCurrentMood(mood.label)}
+                    >
+                      <div className="text-center">
+                        <div className="text-3xl mb-2">{mood.emoji}</div>
+                        <div className="font-medium text-sm">{mood.label}</div>
+                        <div className="text-xs text-gray-500 mt-1">{mood.description}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Cronómetro Pomodoro Funcional */}
-      <Card className={`border-2 ${sessionType === 'work' ? 'border-blue-200 bg-blue-50' : 'border-green-200 bg-green-50'}`}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                ⏱️ Cronómetro de Enfoque
-                {sessionType === 'work' ? '🎯' : '☕'}
-              </CardTitle>
-              <CardDescription>
-                {sessionType === 'work' 
-                  ? 'Sesión de enfoque Pomodoro (25 min)' 
-                  : `Descanso ${completedSessions % 4 === 0 ? 'largo (15 min)' : 'corto (5 min)'}`
-                }
-              </CardDescription>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Sesiones completadas</div>
-              <div className="text-2xl font-bold text-blue-600">{completedSessions}</div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center space-y-4">
-            <div className={`text-5xl font-mono font-bold ${
-              sessionType === 'work' ? 'text-blue-600' : 'text-green-600'
-            }`}>
-              {formatTime(timeLeft)}
-            </div>
-            
-            <Progress 
-              value={getProgress()} 
-              className={`h-3 ${sessionType === 'work' ? '' : 'bg-green-100'}`}
-            />
-            
-            <div className="flex justify-center gap-2">
-              {!isRunning ? (
-                <Button onClick={startTimer} size="lg">
-                  {isPaused ? 'Reanudar' : 'Iniciar'} ▶️
-                </Button>
-              ) : (
-                <Button onClick={pauseTimer} variant="outline" size="lg">
-                  Pausar ⏸️
-                </Button>
-              )}
-              
-              <Button onClick={resetTimer} variant="outline" size="lg">
-                Reset 🔄
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div className="text-center">
-                <div className="font-medium">Estado</div>
-                <div className={`text-xs px-2 py-1 rounded ${
-                  isRunning ? 'bg-green-100 text-green-800' : 
-                  isPaused ? 'bg-yellow-100 text-yellow-800' : 
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {isRunning ? (isPaused ? 'Pausado' : 'Corriendo') : 'Detenido'}
+            {/* Energy Level */}
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  ⚡ Nivel de Energía
+                </CardTitle>
+                <CardDescription>
+                  ¿Qué tan energético te sientes? (1 = Muy bajo, 10 = Muy alto)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Muy bajo</span>
+                    <span className="text-2xl font-bold text-purple-600">{energyLevel}</span>
+                    <span className="text-sm text-gray-600">Muy alto</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={energyLevel}
+                    onChange={(e) => setEnergyLevel(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="grid grid-cols-10 gap-1 text-xs text-gray-400">
+                    {Array.from({length: 10}, (_, i) => (
+                      <div key={i} className="text-center">{i + 1}</div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="text-center">
-                <div className="font-medium">Tipo</div>
-                <div className={`text-xs px-2 py-1 rounded ${
-                  sessionType === 'work' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                }`}>
-                  {sessionType === 'work' ? 'Enfoque' : 'Descanso'}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="font-medium">Progreso</div>
-                <div className="text-xs text-gray-600">
-                  {Math.round(getProgress())}%
-                </div>
-              </div>
-            </div>
-            
-            {completedSessions > 0 && (
-              <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="text-sm text-green-800">
-                  🎉 ¡Has completado {completedSessions} sesión{completedSessions > 1 ? 'es' : ''} de enfoque hoy!
-                </div>
-                <div className="text-xs text-green-600 mt-1">
-                  Tiempo total: {Math.round(completedSessions * 25)} minutos
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="font-medium">¿Listo para guardar tu entrada?</h3>
-              <p className="text-sm text-gray-600">
-                Tu reflexión será analizada por IA para sugerencias personalizadas
-              </p>
-            </div>
-            <Button 
-              size="lg" 
-              onClick={handleSaveEntry}
-              disabled={!currentMood || !reflection}
-            >
-              Guardar Entrada 💾
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            {/* Reflection */}
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  📝 Reflexión del Día
+                </CardTitle>
+                <CardDescription>
+                  Pregunta guía: {currentPrompt}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  placeholder="Comparte tu reflexión sobre el día, enfocándote en tus emociones, interacciones y aprendizajes..."
+                  value={reflection}
+                  onChange={(e) => setReflection(e.target.value)}
+                  rows={6}
+                  className="text-base leading-relaxed"
+                />
+              </CardContent>
+            </Card>
 
-      {/* Estadísticas actualizadas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>📊 Tu Progreso Esta Semana</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-green-600">5</div>
-              <div className="text-sm text-gray-600">Días Activos</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-blue-600">
-                {Math.round((completedSessions * 25 + 200) / 60 * 10) / 10}h
-              </div>
-              <div className="text-sm text-gray-600">Tiempo Enfocado</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">😊</div>
-              <div className="text-sm text-gray-600">Mood Promedio</div>
-            </div>
+            {/* Micro-habits */}
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🌱 Micro-hábitos de Hoy
+                </CardTitle>
+                <CardDescription>
+                  Selecciona las habilidades blandas que practicaste hoy
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {microHabits.map((habit) => (
+                    <div
+                      key={habit.id}
+                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        selectedMicroHabits.includes(habit.id)
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                      onClick={() => handleMicroHabitToggle(habit.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-xl">{habit.icon}</div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{habit.label}</div>
+                          <div className="text-xs text-gray-500">{habit.category}</div>
+                        </div>
+                        {selectedMicroHabits.includes(habit.id) && (
+                          <div className="text-purple-600">✓</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 text-center">
+                  <Badge className="bg-purple-100 text-purple-800">
+                    {selectedMicroHabits.length} hábitos seleccionados
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Save Button */}
+            <Card className="skill-card">
+              <CardContent className="pt-6">
+                <div className="text-center space-y-4">
+                  <h3 className="font-semibold text-lg">¿Listo para registrar tu crecimiento?</h3>
+                  <p className="text-gray-600">
+                    Tu reflexión será analizada para generar insights personalizados sobre tu desarrollo emocional
+                  </p>
+                  <Button 
+                    size="lg" 
+                    onClick={handleSaveEntry}
+                    disabled={!canSave}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8"
+                  >
+                    Guardar Mi Reflexión ✨
+                  </Button>
+                  {!canSave && (
+                    <p className="text-sm text-gray-500">
+                      Completa tu estado emocional, reflexión y al menos un micro-hábito
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Sidebar - Pomodoro Timer */}
+          <div className="space-y-6">
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🍅 Enfoque Profundo
+                </CardTitle>
+                <CardDescription>
+                  Técnica Pomodoro para reflexión concentrada
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center space-y-4">
+                  <div className="text-4xl font-bold text-purple-600">
+                    {formatTime(timeLeft)}
+                  </div>
+                  
+                  <Progress value={getProgress()} className="h-3" />
+                  
+                  <div className="text-sm text-gray-600">
+                    {sessionType === 'work' ? '💭 Tiempo de reflexión' : '☕ Descanso'}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {!isRunning && !isPaused && (
+                      <Button onClick={startTimer} size="sm" className="flex-1">
+                        Iniciar
+                      </Button>
+                    )}
+                    {isRunning && (
+                      <Button onClick={pauseTimer} size="sm" variant="outline" className="flex-1">
+                        Pausar
+                      </Button>
+                    )}
+                    {isPaused && (
+                      <Button onClick={startTimer} size="sm" className="flex-1">
+                        Continuar
+                      </Button>
+                    )}
+                    <Button onClick={resetTimer} size="sm" variant="outline">
+                      Reset
+                    </Button>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    Sesiones completadas: {completedSessions}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Progress Summary */}
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  📊 Tu Progreso
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">7</div>
+                      <div className="text-xs text-gray-600">Días activos</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {Math.round((completedSessions * 25 + 180) / 60 * 10) / 10}h
+                      </div>
+                      <div className="text-xs text-gray-600">Tiempo reflexión</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">23</div>
+                      <div className="text-xs text-gray-600">Micro-hábitos</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-orange-600">🌟</div>
+                      <div className="text-xs text-gray-600">Estado promedio</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 
