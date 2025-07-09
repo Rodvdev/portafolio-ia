@@ -24,13 +24,28 @@ export interface DiagnosticResult {
 
 export interface PortfolioItem {
   id: string;
-  profileId: string;
+  profileId?: string;
   title: string;
   description: string;
-  category: 'Finanzas' | 'Producto' | 'Marketing' | 'Contabilidad' | 'Investigación' | 'Big Data' | 'Operaciones';
-  level: 'Básico' | 'Intermedio' | 'Avanzado';
-  feedback: string;
+  category?: 'Finanzas' | 'Producto' | 'Marketing' | 'Contabilidad' | 'Investigación' | 'Big Data' | 'Operaciones';
+  level?: 'Básico' | 'Intermedio' | 'Avanzado';
+  feedback?: string;
   badgeUrl?: string;
+  // Nuevos campos para habilidades blandas
+  situation?: string;
+  actions?: string;
+  results?: string;
+  reflection?: string;
+  skills?: string[];
+  evidenceType?: "document" | "link" | "video" | "presentation";
+  evidenceUrl?: string;
+  evidenceDescription?: string;
+  impact?: string;
+  collaboration?: string;
+  challenges?: string;
+  learnings?: string;
+  createdAt?: string;
+  score?: number;
 }
 
 export interface DailyLog {

@@ -1,4 +1,4 @@
-# 🧠 Portafolio Pomodoro - Roadmap V1 Legacy
+# 🧠 Softy - Roadmap V1 Legacy
 
 > **Versión**: 1.0.0 Legacy  
 > **Estado Actual**: Demo Funcional con Mock Data  

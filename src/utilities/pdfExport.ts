@@ -122,10 +122,10 @@ export const exportToPDF = async (
 
     // Agregar metadatos
     pdf.setProperties({
-      title: 'CV Profesional - Portafolio Pomodoro',
-      subject: 'Curriculum Vitae generado desde Portafolio Pomodoro',
-      author: 'Plataforma Portafolio Pomodoro',
-      creator: 'Portafolio Pomodoro - Sistema de Validación de Habilidades',
+      title: 'CV Profesional - Softy',
+      subject: 'Curriculum Vitae generado desde Softy',
+      author: 'Plataforma Softy',
+      creator: 'Softy - Sistema de Validación de Habilidades',
     });
 
     // Descargar el PDF
