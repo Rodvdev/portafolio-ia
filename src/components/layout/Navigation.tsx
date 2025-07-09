@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utilities/ui";
+import { Gamification } from "@/components/ui/gamification";
 
 const navigationItems = [
   { href: "/dashboard", label: "Mi Journey", icon: "🌟", description: "Inicio" },
@@ -72,20 +73,8 @@ export function Navigation() {
         ))}
       </nav>
       
-      <div className="mt-6 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm">🎯</span>
-          <span className="text-xs font-medium text-gray-700">Tu Progreso</span>
-        </div>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-gray-600">Habilidades Blandas</span>
-            <span className="text-xs font-bold text-purple-600">65%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full" style={{width: '65%'}}></div>
-          </div>
-        </div>
+      <div className="mt-6">
+        <Gamification size="compact" showAchievements={false} />
       </div>
     </Card>
   );
