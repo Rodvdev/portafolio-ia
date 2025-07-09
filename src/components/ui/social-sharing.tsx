@@ -49,13 +49,13 @@ export function SocialSharing({
       
       case "custom":
         return {
-          text: customText || "¡Desarrollando mis habilidades blandas con Portafolio Pomodoro!",
+          text: customText || "¡Desarrollando mis habilidades blandas con Softy!",
           url: baseUrl
         };
       
       default:
         return {
-          text: "🌟 Desarrollando mi potencial humano con Portafolio Pomodoro - Una plataforma para validar habilidades blandas a través de casos interactivos.",
+          text: "🌟 Desarrollando mi potencial humano con Softy - Una plataforma para validar habilidades blandas a través de casos interactivos.",
           url: baseUrl
         };
     }
@@ -97,7 +97,7 @@ export function SocialSharing({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: title || 'Mi progreso en Portafolio Pomodoro',
+          title: title || 'Mi progreso en Softy',
           text: shareContent.text,
           url: shareContent.url
         });
@@ -243,7 +243,7 @@ export function QuickShare({
       case "progress":
         return `📈 Mi progreso: ${progress.currentStreak} días consecutivos, ${progress.totalPoints} puntos, Nivel ${progress.currentLevel}! #HabilidadesBlandas`;
       default:
-        return "🌟 Desarrollando mi potencial humano con Portafolio Pomodoro!";
+        return "🌟 Desarrollando mi potencial humano con Softy!";
     }
   };
 
