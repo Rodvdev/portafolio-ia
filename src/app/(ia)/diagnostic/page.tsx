@@ -13,90 +13,216 @@ export default function DiagnosticPage() {
   const [explanations, setExplanations] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
 
-  // Casos interactivos de habilidades blandas
+  // 10 Casos interactivos de habilidades blandas del archivo markdown
   const softSkillsCases = [
     {
-      id: "communication",
-      title: "Comunicación en Crisis",
-      skill: "Comunicación",
-      icon: "💬",
-      scenario: "Eres el coordinador de un proyecto importante. El equipo acaba de descubrir un error crítico que podría retrasar la entrega por una semana. Tu jefe está en una reunión importante y el cliente espera una actualización en 30 minutos.",
-      question: "¿Cómo comunicas esta situación al cliente?",
+      id: "feedback_management",
+      title: "Primer Feedback con tu Líder",
+      skill: "Gestión del Tiempo y Comunicación",
+      icon: "⏰",
+      scenario: "Llevas dos semanas como practicante. Tu jefa agenda una reunión para darte retroalimentación, pero llega tarde y solo quedan 10 minutos antes de tu siguiente clase.",
+      question: "¿Cómo gestionas este espacio de feedback?",
       options: [
-        "Espero a que mi jefe salga de la reunión para decidir juntos qué decir",
-        "Llamo inmediatamente al cliente, explico la situación con transparencia y propongo soluciones",
-        "Envío un email genérico diciendo que hay un 'pequeño retraso' sin dar detalles",
-        "Pido a un compañero que hable con el cliente porque no me siento preparado"
+        "Cancelas la reunión para otro día y sales rápido a tu clase",
+        "Propones re-agendar, explicando tu limitación de tiempo y agradeciendo la oportunidad de recibir feedback",
+        "Te quedas y aceptas la retroalimentación aunque pierdas tu clase",
+        "Pides que te envíe los comentarios por correo para evitar otra reunión"
       ],
       correct: 1,
       feedback: {
-        0: "Esperar puede generar más desconfianza. La comunicación proactiva es clave en situaciones críticas.",
-        1: "¡Excelente! La transparencia y las soluciones proactivas construyen confianza, incluso en momentos difíciles.",
-        2: "Minimizar el problema puede dañar la relación a largo plazo. Los clientes valoran la honestidad.",
-        3: "Evitar la responsabilidad no resuelve el problema y puede afectar tu credibilidad profesional."
+        0: "Cancelar sin comunicar adecuadamente puede verse como falta de interés en tu desarrollo profesional.",
+        1: "¡Excelente! Demuestras respeto por el tiempo de ambos, profesionalismo y valoración del feedback.",
+        2: "Aunque muestra dedicación, no gestionar tus compromisos académicos puede generar problemas a largo plazo.",
+        3: "Evitar la interacción directa puede limitar la calidad del feedback y la relación con tu supervisor."
       }
     },
     {
-      id: "leadership",
-      title: "Liderazgo en Conflicto",
-      skill: "Liderazgo",
-      icon: "👑",
-      scenario: "Lideras un equipo de 5 personas. Dos miembros clave han tenido una fuerte discusión sobre la dirección del proyecto. El ambiente se ha vuelto tenso y está afectando la productividad de todo el equipo. Ambos son talentosos pero tienen personalidades muy diferentes.",
-      question: "Como líder, ¿cuál es tu primera acción?",
+      id: "unclear_instructions",
+      title: "Entrega con Instrucciones Poco Claras",
+      skill: "Iniciativa y Resolución de Problemas",
+      icon: "🤔",
+      scenario: "Te asignan hacer un reporte, pero el alcance no está definido y tu supervisor está de viaje.",
+      question: "¿Qué haces primero?",
       options: [
-        "Ignoro la situación esperando que se resuelva sola con el tiempo",
-        "Hablo por separado con cada uno para entender sus perspectivas antes de tomar acción",
-        "Llamo a una reunión grupal inmediatamente para resolver el conflicto públicamente",
-        "Tomo una decisión unilateral sobre el proyecto para evitar más conflictos"
+        "Avanzas el reporte como creas conveniente para no perder tiempo",
+        "Contactas a un compañero con más experiencia, aclaras objetivos y confirmas por chat con el supervisor",
+        "Esperas a que regrese el supervisor, sin empezar el trabajo",
+        "Entregas un resumen de tus dudas y pides que otro compañero tome la tarea"
       ],
       correct: 1,
       feedback: {
-        0: "Los conflictos no resueltos tienden a empeorar y afectar a todo el equipo.",
-        1: "¡Perfecto! Entender todas las perspectivas es fundamental para un liderazgo efectivo y resolución de conflictos.",
-        2: "Los conflictos públicos pueden intensificar las tensiones. Es mejor entender primero las perspectivas individuales.",
-        3: "Las decisiones unilaterales pueden resolver el síntoma pero no la causa raíz del conflicto."
+        0: "Avanzar sin claridad puede resultar en trabajo no útil y demostrar falta de planificación.",
+        1: "¡Perfecto! Muestras iniciativa, colaboración y comunicación proactiva para resolver la ambigüedad.",
+        2: "Esperar sin tomar acción puede interpretarse como falta de iniciativa y proactividad.",
+        3: "Transferir responsabilidades sin intentar resolverlas puede afectar tu reputación profesional."
       }
     },
     {
-      id: "empathy",
-      title: "Empatía en Acción",
-      skill: "Empatía",
-      icon: "💝",
-      scenario: "Un compañero de trabajo que siempre es puntual y eficiente ha llegado tarde tres veces esta semana. Su rendimiento ha bajado notablemente y parece distraído. Otros colegas han comenzado a comentar negativamente sobre su comportamiento.",
-      question: "¿Cómo manejas esta situación?",
+      id: "time_management",
+      title: "Gestión de Tiempo en un Día Cargado",
+      skill: "Equilibrio Trabajo-Estudio",
+      icon: "⚖️",
+      scenario: "Mañana tienes examen universitario y hoy te asignan una tarea urgente que lleva 4 horas.",
+      question: "¿Cómo manejas tu tiempo y la expectativa del equipo?",
       options: [
-        "Me uno a los comentarios porque su comportamiento está afectando al equipo",
-        "Me acerco de manera privada para preguntarle si está todo bien y si necesita apoyo",
-        "Reporto inmediatamente su comportamiento a recursos humanos",
-        "Ignoro la situación porque no es mi responsabilidad"
+        "No mencionas el examen y trabajas toda la noche para cumplir",
+        "Informas tu limitación, propones un plan dividido en dos días y ofreces adelantar la parte crítica hoy",
+        "Solicitas que asignen la tarea a otro, alegando motivos personales",
+        "Haces la mitad de la tarea y asumes que entenderán la demora"
       ],
       correct: 1,
       feedback: {
-        0: "Participar en comentarios negativos puede empeorar la situación y dañar la moral del equipo.",
-        1: "¡Excelente! La empatía y el apoyo pueden ayudar a identificar y resolver problemas subyacentes.",
-        2: "Reportar sin intentar entender primero puede ser prematuro y dañar la relación.",
-        3: "Mostrar preocupación por los colegas fortalece las relaciones y el ambiente laboral."
+        0: "Sacrificar el estudio constantemente puede afectar tu rendimiento académico y bienestar.",
+        1: "¡Excelente! Demuestras transparencia, planificación estratégica y compromiso con ambas responsabilidades.",
+        2: "Evitar responsabilidades sin proponer alternativas puede dañar tu credibilidad en el equipo.",
+        3: "Asumir comprensión sin comunicar puede generar expectativas no cumplidas y desconfianza."
       }
     },
     {
-      id: "adaptability",
-      title: "Adaptabilidad Bajo Presión",
-      skill: "Adaptabilidad",
-      icon: "🦋",
-      scenario: "Estás a mitad de un proyecto de 6 meses cuando la empresa decide cambiar completamente la tecnología que están usando. Esto significa que todo el trabajo realizado hasta ahora debe ser replanteado. El equipo está frustrado y algunos consideran renunciar.",
-      question: "¿Cómo respondes a este cambio?",
+      id: "remote_collaboration",
+      title: "Colaboración Remota",
+      skill: "Comunicación Virtual y Liderazgo",
+      icon: "💻",
+      scenario: "Estás en tu primer proyecto remoto. Durante la reunión por Zoom nadie enciende cámara y reina el silencio.",
+      question: "¿Cómo fomentas la participación sin ser la persona con menor jerarquía?",
       options: [
-        "Me resisto al cambio y trato de convencer a la gerencia de mantener el enfoque original",
-        "Acepto el cambio y me enfoco en encontrar formas de aprovechar el trabajo ya realizado",
-        "Me quejo constantemente sobre lo injusto de la situación",
-        "Busco inmediatamente otro trabajo porque no me gustan los cambios"
+        "Permaneces callado para no incomodar",
+        "Rompes el hielo: activas tu cámara, saludas al equipo y planteas una pregunta concreta sobre la agenda",
+        "Escribes tus ideas en el chat y sigues sin hablar",
+        "Envías un correo después con tus comentarios para evitar interrumpir la reunión"
       ],
       correct: 1,
       feedback: {
-        0: "Resistirse al cambio puede limitar oportunidades de crecimiento y innovación.",
-        1: "¡Perfecto! La adaptabilidad positiva y la búsqueda de soluciones son clave en entornos dinámicos.",
-        2: "Quejarse constantemente puede afectar la moral del equipo y tu reputación profesional.",
-        3: "Evitar los cambios puede limitar tu desarrollo profesional en un mundo laboral dinámico."
+        0: "Permanecer pasivo puede limitarte profesionalmente y reduce el valor que aportas al equipo.",
+        1: "¡Perfecto! Demuestras liderazgo natural, iniciativa y habilidades de facilitación grupal.",
+        2: "Usar solo chat puede ser un inicio, pero no genera la dinámica colaborativa necesaria.",
+        3: "Comunicar después puede ser útil, pero no aborda el problema inmediato de participación grupal."
+      }
+    },
+    {
+      id: "personality_conflict",
+      title: "Conflicto de Personalidades",
+      skill: "Resolución de Conflictos y Asertividad",
+      icon: "🤝",
+      scenario: "Comparten cubículo con otro practicante muy extrovertido que habla fuerte y te distrae.",
+      question: "¿Cómo abordas la situación?",
+      options: [
+        "Te pones audífonos sin decir nada",
+        "Hablas en privado, explicas tu dificultad para concentrarte y acuerdan señales o espacios de conversación",
+        "Pides al supervisor que cambie tu lugar, sin explicar motivo",
+        "Envías un mensaje pasivo-agresivo en el chat grupal para que 'alguien' baje el volumen"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Evitar la comunicación puede empeorar el problema y no desarrolla habilidades de resolución de conflictos.",
+        1: "¡Excelente! Demuestras comunicación asertiva, respeto mutuo y habilidad para encontrar soluciones colaborativas.",
+        2: "Escalar sin intentar resolver directamente puede verse como falta de habilidades interpersonales.",
+        3: "La comunicación pasivo-agresiva puede dañar relaciones y crear un ambiente laboral tóxico."
+      }
+    },
+    {
+      id: "own_error_initiative",
+      title: "Iniciativa Frente a un Error Propio",
+      skill: "Responsabilidad y Transparencia",
+      icon: "🔍",
+      scenario: "Notas que cargaste un dato incorrecto en el CRM; el cliente aún no se ve afectado.",
+      question: "¿Qué acción tomas?",
+      options: [
+        "Corriges el dato en silencio, confiando en que nadie lo notará",
+        "Corriges el dato, documentas el cambio y avisas a tu encargado con el aprendizaje para evitar futuros errores",
+        "Informas el error pero pides que otro compañero lo solucione para no equivocarte de nuevo",
+        "Esperas a ver si surge un problema antes de actuar"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Ocultar errores, aunque parezcan menores, puede generar problemas mayores y afectar la confianza.",
+        1: "¡Perfecto! Demuestras integridad, responsabilidad y mentalidad de mejora continua.",
+        2: "Reconocer el error es bueno, pero transferir la solución puede verse como evasión de responsabilidad.",
+        3: "Ser reactivo en lugar de proactivo puede permitir que problemas menores se conviertan en crisis."
+      }
+    },
+    {
+      id: "priority_changes",
+      title: "Adaptación a Cambios de Prioridad",
+      skill: "Adaptabilidad y Mentalidad de Crecimiento",
+      icon: "🔄",
+      scenario: "A mitad de la semana cambian el objetivo del proyecto y parte de tu trabajo ya no se usará.",
+      question: "¿Cómo reaccionas?",
+      options: [
+        "Te molestas y comentas con tus compañeros que fue tiempo perdido",
+        "Aceptas el cambio, extraes lo reutilizable de tu trabajo y ofreces aplicarlo al nuevo objetivo",
+        "Sigues trabajando en el plan original porque ya estaba avanzado",
+        "Preguntas si puedes salir temprano porque tu tarea quedó 'sin efecto'"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Expresar frustración públicamente puede dañar la moral del equipo y tu imagen profesional.",
+        1: "¡Excelente! Demuestras flexibilidad, optimización de recursos y enfoque en soluciones.",
+        2: "Resistirse a cambios puede resultar en trabajo innecesario y conflictos con la dirección del proyecto.",
+        3: "Desvincularse cuando hay cambios puede verse como falta de compromiso y adaptabilidad."
+      }
+    },
+    {
+      id: "mentor_support",
+      title: "Solicitud de Apoyo a un Mentor",
+      skill: "Búsqueda de Ayuda y Autodirección",
+      icon: "🎯",
+      scenario: "Te encargan usar una herramienta que nunca has visto. Hay tutoriales, pero el plazo es corto y tu mentor está ocupado.",
+      question: "¿Cómo pides ayuda?",
+      options: [
+        "No pides ayuda; intentas solo y esperas aprender lo básico",
+        "Preparas preguntas concretas, agendas 15 min con tu mentor y luego practicas con los tutoriales",
+        "Envías mensajes insistentes hasta que el mentor responda",
+        "Declinas la tarea porque 'no estás capacitado'"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Evitar pedir ayuda puede llevar a resultados subóptimos y perder oportunidades de aprendizaje.",
+        1: "¡Perfecto! Demuestras preparación, respeto por el tiempo ajeno y estrategia eficiente de aprendizaje.",
+        2: "Ser insistente sin considerar la disponibilidad ajena puede dañar relaciones profesionales.",
+        3: "Declinar responsabilidades por falta de conocimiento previo puede limitar tu crecimiento profesional."
+      }
+    },
+    {
+      id: "good_news_communication",
+      title: "Comunicación de Buenas Noticias",
+      skill: "Comunicación de Logros y Humildad",
+      icon: "📈",
+      scenario: "Te enteras de que el equipo batió récord de ventas gracias a tu análisis, pero nadie lo ha compartido.",
+      question: "¿Cómo comunicas el logro sin parecer arrogante?",
+      options: [
+        "Publicas en el chat general: '¡Yo hice el análisis que logró el récord!'",
+        "Informas a tu líder con datos, propones que se reconozca al equipo completo y ofreces presentar insights",
+        "Esperas a que otro lo anuncie; no quieres figurar",
+        "Mandas tu CV al director resaltando el récord como mérito propio"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Auto-promoción directa puede verse como arrogante y no reconoce la contribución del equipo.",
+        1: "¡Excelente! Demuestras humildad, visión de equipo y enfoque en el valor aportado más que en el crédito personal.",
+        2: "Ser demasiado modesto puede hacer que tus contribuciones pasen desapercibidas.",
+        3: "Promocionarse sin contexto apropiado puede verse como oportunista y poco profesional."
+      }
+    },
+    {
+      id: "ethical_dilemma",
+      title: "Dilema Ético con Recursos de la Empresa",
+      skill: "Ética Profesional e Integridad",
+      icon: "⚖️",
+      scenario: "Un amigo te pide la licencia de software que la empresa te dio 'porque solo la usas en prácticas'.",
+      question: "¿Cómo respondes?",
+      options: [
+        "Le compartes la licencia; 'no le hace daño a nadie'",
+        "Rechazas la petición, explicas que es propiedad de la empresa y ofreces alternativas gratuitas",
+        "Ignoras el mensaje para evitar conflicto",
+        "Le respondes que pregunte a TI, sin mencionar que ya sabes la política"
+      ],
+      correct: 1,
+      feedback: {
+        0: "Compartir recursos empresariales sin autorización viola políticas y puede tener consecuencias legales.",
+        1: "¡Perfecto! Demuestras integridad profesional, conocimiento de políticas y disposición a ayudar éticamente.",
+        2: "Evitar responder a dilemas éticos puede interpretarse como falta de principios claros.",
+        3: "Transferir la responsabilidad sin educar sobre la política puede perpetuar comportamientos inapropiados."
       }
     }
   ];
@@ -137,19 +263,94 @@ export default function DiagnosticPage() {
     const results = softSkillsCases.map(caseData => {
       const selectedOption = selectedOptions[caseData.id];
       const isCorrect = selectedOption === caseData.correct;
-      const score = isCorrect ? 100 : Math.max(0, 100 - Math.abs(selectedOption - caseData.correct) * 25);
+      
+      // Sistema de puntuación más sofisticado
+      let score = 0;
+      if (isCorrect) {
+        score = 100;
+      } else {
+        // Puntuación parcial basada en qué tan cerca está de la respuesta correcta
+        const distance = Math.abs(selectedOption - caseData.correct);
+        if (distance === 1) score = 75; // Respuesta cercana
+        else if (distance === 2) score = 50; // Respuesta media
+        else score = 25; // Respuesta distante
+      }
+      
+      // Análisis cualitativo de la explicación
+      const explanation = explanations[caseData.id] || "";
+      let explanationQuality = 0;
+      if (explanation.length > 50) explanationQuality += 20;
+      if (explanation.includes("porque") || explanation.includes("debido") || explanation.includes("ya que")) explanationQuality += 15;
+      if (explanation.includes("equipo") || explanation.includes("colabora") || explanation.includes("comunica")) explanationQuality += 10;
+      if (explanation.length > 100) explanationQuality += 5;
+      
+      const finalScore = Math.min(100, score + explanationQuality);
       
       return {
+        id: caseData.id,
+        title: caseData.title,
         skill: caseData.skill,
         icon: caseData.icon,
-        score,
+        score: finalScore,
+        rawScore: score,
+        explanationBonus: explanationQuality,
         isCorrect,
-                 feedback: caseData.feedback[selectedOption as keyof typeof caseData.feedback] || "No se seleccionó una opción",
-        explanation: explanations[caseData.id] || "Sin explicación proporcionada"
+        selectedOption,
+        feedback: caseData.feedback[selectedOption as keyof typeof caseData.feedback] || "No se seleccionó una opción",
+        explanation: explanation || "Sin explicación proporcionada"
       };
     });
 
     return results;
+  };
+
+  const getSkillCategoryAnalysis = (results: ReturnType<typeof calculateResults>) => {
+    const categories = {
+      "Comunicación": {
+        skills: ["Gestión del Tiempo y Comunicación", "Comunicación Virtual y Liderazgo", "Comunicación de Logros y Humildad"],
+        icon: "💬",
+        description: "Tu capacidad para transmitir ideas y conectar con otros"
+      },
+      "Liderazgo y Gestión": {
+        skills: ["Comunicación Virtual y Liderazgo", "Resolución de Conflictos y Asertividad", "Búsqueda de Ayuda y Autodirección"],
+        icon: "👑",
+        description: "Tu habilidad para guiar, influir y tomar decisiones"
+      },
+      "Adaptabilidad": {
+        skills: ["Adaptabilidad y Mentalidad de Crecimiento", "Equilibrio Trabajo-Estudio"],
+        icon: "🔄",
+        description: "Tu flexibilidad ante cambios y situaciones nuevas"
+      },
+      "Ética e Integridad": {
+        skills: ["Ética Profesional e Integridad", "Responsabilidad y Transparencia"],
+        icon: "⚖️",
+        description: "Tu compromiso con principios morales y profesionales"
+      },
+      "Resolución de Problemas": {
+        skills: ["Iniciativa y Resolución de Problemas", "Búsqueda de Ayuda y Autodirección"],
+        icon: "🎯",
+        description: "Tu capacidad para enfrentar desafíos y encontrar soluciones"
+      }
+    };
+
+    return Object.entries(categories).map(([category, info]) => {
+      const relevantResults = results.filter(r => 
+        info.skills.some(skill => r.skill.includes(skill) || skill.includes(r.skill))
+      );
+      
+      const averageScore = relevantResults.length > 0 
+        ? relevantResults.reduce((sum, r) => sum + r.score, 0) / relevantResults.length 
+        : 0;
+      
+      return {
+        category,
+        icon: info.icon,
+        description: info.description,
+        score: Math.round(averageScore),
+        resultsCount: relevantResults.length,
+        level: averageScore >= 80 ? "Avanzado" : averageScore >= 60 ? "Intermedio" : "En Desarrollo"
+      };
+    });
   };
 
   const canProceed = () => {
@@ -163,6 +364,7 @@ export default function DiagnosticPage() {
     const averageScore = results.reduce((sum, result) => sum + result.score, 0) / results.length;
     const strongSkills = results.filter(r => r.score >= 80);
     const developmentAreas = results.filter(r => r.score < 60);
+    const categoryAnalysis = getSkillCategoryAnalysis(results);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
@@ -190,10 +392,68 @@ export default function DiagnosticPage() {
                 </div>
                 <div className="coach-message">
                   <p className="text-blue-800 font-medium">
-                    🤖 &ldquo;Has demostrado un gran potencial en habilidades blandas. 
-                    Tus respuestas muestran reflexión y comprensión de situaciones complejas.&rdquo;
+                    🤖 &ldquo;{averageScore >= 80 
+                      ? 'Excelente desempeño! Demuestras madurez profesional y habilidades blandas bien desarrolladas.'
+                      : averageScore >= 65
+                      ? 'Buen rendimiento general. Tienes una base sólida de habilidades blandas con áreas específicas para pulir.'
+                      : averageScore >= 50
+                      ? 'Rendimiento prometedor. Tus respuestas muestran potencial, con oportunidades claras de crecimiento.'
+                      : 'Gran oportunidad de desarrollo. Tus respuestas indican un espacio significativo para fortalecer estas habilidades clave.'
+                    }&rdquo;
                   </p>
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="bg-white/50 p-2 rounded">
+                      <strong>Casos perfectos:</strong> {results.filter(r => r.isCorrect).length}/{results.length}
+                    </div>
+                    <div className="bg-white/50 p-2 rounded">
+                      <strong>Puntuación base:</strong> {Math.round(results.reduce((sum, r) => sum + r.rawScore, 0) / results.length)}%
+                    </div>
+                    <div className="bg-white/50 p-2 rounded">
+                      <strong>Bonus análisis:</strong> +{Math.round(results.reduce((sum, r) => sum + r.explanationBonus, 0) / results.length)}%
+                    </div>
+                  </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Skill Category Analysis */}
+          <Card className="skill-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">🎯</span>
+                Análisis por Categorías de Habilidades
+              </CardTitle>
+              <CardDescription>
+                Tu perfil de competencias organizadas por áreas clave
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categoryAnalysis.map((category, index) => (
+                  <div key={index} className="p-4 rounded-lg border bg-gradient-to-br from-gray-50 to-white">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-2xl">{category.icon}</div>
+                      <div>
+                        <h3 className="font-semibold text-lg">{category.category}</h3>
+                        <Badge className={`text-xs ${
+                          category.level === 'Avanzado' ? 'bg-green-100 text-green-800' :
+                          category.level === 'Intermedio' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {category.level}
+                        </Badge>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">{category.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-bold text-blue-600">{category.score}%</div>
+                      <div className="text-xs text-gray-500">
+                        {category.resultsCount} caso{category.resultsCount !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -207,30 +467,53 @@ export default function DiagnosticPage() {
                     <div className="flex items-center gap-3">
                       <div className="text-3xl">{result.icon}</div>
                       <div>
-                        <CardTitle className="text-lg">{result.skill}</CardTitle>
-                        <CardDescription>Caso {index + 1}</CardDescription>
+                        <CardTitle className="text-lg">{result.title}</CardTitle>
+                        <CardDescription>{result.skill}</CardDescription>
                       </div>
                     </div>
-                    <Badge className={`${
-                      result.score >= 80 ? 'bg-green-100 text-green-800' :
-                      result.score >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {result.score}%
-                    </Badge>
+                    <div className="text-right">
+                      <Badge className={`${
+                        result.score >= 80 ? 'bg-green-100 text-green-800' :
+                        result.score >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {result.score}%
+                      </Badge>
+                      {result.explanationBonus > 0 && (
+                        <div className="text-xs text-green-600 mt-1">
+                          +{result.explanationBonus}% análisis
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
+                    {/* Performance indicator */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className={`w-3 h-3 rounded-full ${
+                        result.isCorrect ? 'bg-green-500' : 'bg-orange-500'
+                      }`}></div>
+                      <span className={result.isCorrect ? 'text-green-700' : 'text-orange-700'}>
+                        {result.isCorrect ? 'Respuesta óptima seleccionada' : 'Oportunidad de mejora identificada'}
+                      </span>
+                    </div>
+                    
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <p className="text-sm text-blue-800">
-                        <strong>Feedback:</strong> {result.feedback}
+                        <strong>Feedback profesional:</strong> {result.feedback}
                       </p>
                     </div>
+                    
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-sm text-gray-700">
-                        <strong>Tu explicación:</strong> {result.explanation}
+                        <strong>Tu razonamiento:</strong> {result.explanation}
                       </p>
+                      {result.explanation.length > 100 && (
+                        <div className="text-xs text-green-600 mt-2">
+                          ✓ Análisis detallado proporcionado
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -293,12 +576,72 @@ export default function DiagnosticPage() {
             </Card>
           </div>
 
+          {/* Personalized Recommendations */}
+          <Card className="skill-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="text-2xl">💡</span>
+                Recomendaciones Personalizadas
+              </CardTitle>
+              <CardDescription>
+                Plan de acción específico basado en tu evaluación
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Priority Areas */}
+                {developmentAreas.length > 0 && (
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <h3 className="font-semibold text-orange-800 mb-2">🎯 Prioridad Alta - Enfócate en:</h3>
+                    <div className="space-y-2">
+                      {developmentAreas.slice(0, 2).map((area, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div className="text-lg">{area.icon}</div>
+                          <div>
+                            <span className="font-medium">{area.skill}</span>
+                            <p className="text-sm text-orange-700">
+                              {area.skill.includes('Comunicación') && 'Practica técnicas de comunicación asertiva y feedback constructivo.'}
+                              {area.skill.includes('Liderazgo') && 'Desarrolla habilidades de liderazgo a través de proyectos grupales.'}
+                              {area.skill.includes('Adaptabilidad') && 'Trabaja en ejercicios de flexibilidad mental y manejo del cambio.'}
+                              {area.skill.includes('Ética') && 'Reflexiona sobre casos éticos y construye un marco de valores sólido.'}
+                              {area.skill.includes('Resolución') && 'Practica metodologías de resolución de problemas como Design Thinking.'}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Strengths to Leverage */}
+                {strongSkills.length > 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h3 className="font-semibold text-green-800 mb-2">💪 Fortalezas para Potenciar:</h3>
+                    <div className="space-y-2">
+                      {strongSkills.slice(0, 2).map((strength, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div className="text-lg">{strength.icon}</div>
+                          <div>
+                            <span className="font-medium">{strength.skill}</span>
+                            <p className="text-sm text-green-700">
+                              Usa esta fortaleza como mentor para otros y incluye ejemplos específicos en tu portafolio.
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Next Steps */}
           <Card className="skill-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span className="text-2xl">🚀</span>
-                Próximos Pasos Recomendados
+                Tu Plan de Acción Personalizado
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -308,33 +651,62 @@ export default function DiagnosticPage() {
                     <div className="text-3xl mb-2">🏆</div>
                     <h3 className="font-semibold text-purple-800">Construye tu Portafolio</h3>
                     <p className="text-sm text-purple-600 mt-1">
-                      Valida tus habilidades con casos prácticos
+                      Documenta casos reales que demuestren estas habilidades
                     </p>
+                    <Badge className="mt-2 bg-purple-100 text-purple-800">
+                      Prioridad {averageScore >= 70 ? 'Alta' : 'Media'}
+                    </Badge>
                   </div>
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <div className="text-3xl mb-2">💭</div>
-                    <h3 className="font-semibold text-blue-800">Reflexión Diaria</h3>
+                    <h3 className="font-semibold text-blue-800">Reflexión Dirigida</h3>
                     <p className="text-sm text-blue-600 mt-1">
-                      Desarrolla autoconciencia emocional
+                      {developmentAreas.length > 0 
+                        ? 'Enfócate en situaciones que desafíen tus áreas de oportunidad'
+                        : 'Mantén un diario de situaciones complejas y tus respuestas'
+                      }
                     </p>
+                    <Badge className="mt-2 bg-blue-100 text-blue-800">
+                      {developmentAreas.length > 2 ? 'Crítico' : 'Recomendado'}
+                    </Badge>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
                     <div className="text-3xl mb-2">📈</div>
-                    <h3 className="font-semibold text-green-800">Seguimiento Semanal</h3>
+                    <h3 className="font-semibold text-green-800">Seguimiento Inteligente</h3>
                     <p className="text-sm text-green-600 mt-1">
-                      Monitorea tu progreso continuo
+                      {averageScore >= 75 
+                        ? 'Evalúa casos más complejos y lidera iniciativas'
+                        : 'Re-evalúa estas habilidades en 2-3 semanas'
+                      }
                     </p>
+                    <Badge className="mt-2 bg-green-100 text-green-800">
+                      Seguimiento en {averageScore >= 75 ? '4' : '2'} semanas
+                    </Badge>
                   </div>
                 </div>
                 
-                <div className="text-center">
+                <div className="text-center space-y-3">
                   <Button 
                     size="lg" 
                     className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8"
-                    onClick={() => window.location.href = '/portfolio'}
+                    onClick={() => {
+                      // Guardar resultados en localStorage para el portafolio
+                      localStorage.setItem('softSkillsEvaluation', JSON.stringify({
+                        results,
+                        averageScore: Math.round(averageScore),
+                        categoryAnalysis,
+                        completedAt: new Date().toISOString(),
+                        strongSkills: strongSkills.map(s => s.skill),
+                        developmentAreas: developmentAreas.map(s => s.skill)
+                      }));
+                      window.location.href = '/portfolio';
+                    }}
                   >
-                    Comenzar Portafolio Humano 🏆
+                    Generar Portafolio Profesional 🏆
                   </Button>
+                  <p className="text-sm text-gray-600">
+                    Tus resultados se integrarán automáticamente en tu portafolio de habilidades
+                  </p>
                 </div>
               </div>
             </CardContent>
