@@ -1,247 +1,630 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { mockWeeklySummary } from "@/data/mockData";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useUserProgress } from "@/hooks/useLocalStorage";
+import { SocialSharing } from "@/components/ui/social-sharing";
+import { 
+  Calendar, 
+  Target, 
+  TrendingUp, 
+  Award, 
+  CheckCircle2, 
+  Circle, 
+  Plus,
+  Clock,
+  Users,
+  Brain,
+  Zap
+} from "lucide-react";
+
+interface WeeklyGoal {
+  id: string;
+  title: string;
+  description: string;
+  targetValue: number;
+  currentValue: number;
+  type: 'projects' | 'tests' | 'daily_logs' | 'streak' | 'points' | 'custom';
+  completed: boolean;
+  createdAt: string;
+}
+
+interface WeeklyInsight {
+  type: 'improvement' | 'strength' | 'recommendation' | 'achievement';
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+}
 
 export default function WeeklyPage() {
-  const shareToLinkedIn = () => {
-    const text = encodeURIComponent(mockWeeklySummary.shareableHighlights);
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=https://portafolio-ia.com&text=${text}`;
-    window.open(url, '_blank');
+  const { progress } = useUserProgress();
+  const [currentWeek] = useState(getCurrentWeek());
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [newGoal, setNewGoal] = useState({
+    title: '',
+    description: '',
+    targetValue: 1,
+    type: 'projects' as WeeklyGoal['type']
+  });
+
+  // Obtener semana actual
+  function getCurrentWeek() {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    
+    return {
+      start: startOfWeek,
+      end: endOfWeek,
+      weekNumber: getWeekNumber(now),
+      year: now.getFullYear()
+    };
+  }
+
+  function getWeekNumber(date: Date) {
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
+  }
+
+  // Obtener objetivos semanales
+  const getWeeklyGoals = (): WeeklyGoal[] => {
+    const weekKey = `${currentWeek.year}-W${currentWeek.weekNumber}`;
+    const goals = localStorage.getItem(`weeklyGoals-${weekKey}`);
+    return goals ? JSON.parse(goals) : [];
   };
 
+  // Guardar objetivos semanales
+  const saveWeeklyGoals = (goals: WeeklyGoal[]) => {
+    const weekKey = `${currentWeek.year}-W${currentWeek.weekNumber}`;
+    localStorage.setItem(`weeklyGoals-${weekKey}`, JSON.stringify(goals));
+  };
+
+  // Calcular métricas semanales
+  const calculateWeeklyMetrics = () => {
+    const weekStart = currentWeek.start.toISOString().split('T')[0];
+    const weekEnd = currentWeek.end.toISOString().split('T')[0];
+
+    // Actividad de la semana
+    const weeklyProjects = progress.portfolioItems.filter(item => {
+      if (!item.createdAt) return false;
+      const createdDate = new Date(item.createdAt).toISOString().split('T')[0];
+      return createdDate >= weekStart && createdDate <= weekEnd;
+    });
+
+    const weeklyLogs = progress.dailyLogs.filter(log => {
+      return log.date >= weekStart && log.date <= weekEnd;
+    });
+
+    // Habilidades desarrolladas esta semana
+    const weeklySkills = weeklyProjects.flatMap(item => item.skills || []);
+    const skillCounts = weeklySkills.reduce((acc, skill) => {
+      acc[skill] = (acc[skill] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const averageScore = weeklyProjects.length > 0 
+      ? Math.round(weeklyProjects.reduce((sum, item) => sum + (item.score || 0), 0) / weeklyProjects.length)
+      : 0;
+
+    return {
+      projectsCompleted: weeklyProjects.length,
+      dailyLogsCount: weeklyLogs.length,
+      skillsDeveloped: Object.keys(skillCounts).length,
+      topSkills: Object.entries(skillCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([skill, count]) => ({ skill, count })),
+      averageScore,
+      pointsEarned: weeklyProjects.reduce((sum, item) => sum + (item.score || 0) * 10, 0),
+      activeDays: weeklyLogs.length,
+      weeklyProjects,
+      weeklyLogs
+    };
+  };
+
+  // Generar insights automáticos
+  const generateInsights = (metrics: ReturnType<typeof calculateWeeklyMetrics>): WeeklyInsight[] => {
+    const insights: WeeklyInsight[] = [];
+
+    // Insight sobre productividad
+    if (metrics.projectsCompleted >= 3) {
+      insights.push({
+        type: 'achievement',
+        title: 'Semana Muy Productiva',
+        description: `Completaste ${metrics.projectsCompleted} proyectos esta semana. ¡Excelente ritmo de crecimiento!`,
+        icon: '🚀',
+        color: 'text-green-600'
+      });
+    } else if (metrics.projectsCompleted >= 1) {
+      insights.push({
+        type: 'improvement',
+        title: 'Progreso Constante',
+        description: `Con ${metrics.projectsCompleted} proyecto(s) completado(s), mantienes un buen ritmo de desarrollo.`,
+        icon: '📈',
+        color: 'text-blue-600'
+      });
+    }
+
+    // Insight sobre habilidades
+    if (metrics.skillsDeveloped >= 5) {
+      insights.push({
+        type: 'strength',
+        title: 'Desarrollo Multifacético',
+        description: `Desarrollaste ${metrics.skillsDeveloped} habilidades diferentes. Tu crecimiento es muy balanceado.`,
+        icon: '🎯',
+        color: 'text-purple-600'
+      });
+    }
+
+    // Insight sobre consistencia
+    if (metrics.activeDays >= 5) {
+      insights.push({
+        type: 'achievement',
+        title: 'Excelente Consistencia',
+        description: `Fuiste activo ${metrics.activeDays} días esta semana. La consistencia es clave para el crecimiento.`,
+        icon: '⭐',
+        color: 'text-yellow-600'
+      });
+    } else if (metrics.activeDays >= 3) {
+      insights.push({
+        type: 'recommendation',
+        title: 'Mejora la Consistencia',
+        description: `Con ${metrics.activeDays} días activos, podrías beneficiarte de una rutina más regular.`,
+        icon: '🎪',
+        color: 'text-orange-600'
+      });
+    }
+
+    // Insight sobre calidad
+    if (metrics.averageScore >= 85) {
+      insights.push({
+        type: 'strength',
+        title: 'Alta Calidad de Trabajo',
+        description: `Tu score promedio de ${metrics.averageScore}% demuestra excelente calidad en tus proyectos.`,
+        icon: '💎',
+        color: 'text-blue-600'
+      });
+    }
+
+    // Recomendación para la próxima semana
+    if (metrics.topSkills.length > 0) {
+      const topSkill = metrics.topSkills[0];
+      insights.push({
+        type: 'recommendation',
+        title: 'Oportunidad de Especialización',
+        description: `Tu fortaleza en ${topSkill.skill} te posiciona para proyectos más avanzados en esta área.`,
+        icon: '🎓',
+        color: 'text-indigo-600'
+      });
+    }
+
+    return insights;
+  };
+
+  // Agregar objetivo semanal
+  const addWeeklyGoal = () => {
+    if (!newGoal.title.trim()) return;
+
+    const goals = getWeeklyGoals();
+    const newGoalObj: WeeklyGoal = {
+      id: `goal-${Date.now()}`,
+      title: newGoal.title,
+      description: newGoal.description,
+      targetValue: newGoal.targetValue,
+      currentValue: 0,
+      type: newGoal.type,
+      completed: false,
+      createdAt: new Date().toISOString()
+    };
+
+    goals.push(newGoalObj);
+    saveWeeklyGoals(goals);
+    setNewGoal({ title: '', description: '', targetValue: 1, type: 'projects' });
+    setShowGoalForm(false);
+  };
+
+  // Calcular progreso de objetivos
+  const updateGoalProgress = (goals: WeeklyGoal[], metrics: ReturnType<typeof calculateWeeklyMetrics>) => {
+    return goals.map(goal => {
+      let currentValue = 0;
+      
+      switch (goal.type) {
+        case 'projects':
+          currentValue = metrics.projectsCompleted;
+          break;
+        case 'daily_logs':
+          currentValue = metrics.dailyLogsCount;
+          break;
+        case 'streak':
+          currentValue = progress.currentStreak;
+          break;
+        case 'points':
+          currentValue = metrics.pointsEarned;
+          break;
+        default:
+          currentValue = goal.currentValue;
+      }
+
+      return {
+        ...goal,
+        currentValue,
+        completed: currentValue >= goal.targetValue
+      };
+    });
+  };
+
+  const weeklyMetrics = calculateWeeklyMetrics();
+  const weeklyGoals = updateGoalProgress(getWeeklyGoals(), weeklyMetrics);
+  const insights = generateInsights(weeklyMetrics);
+
+  // Comparación con semana anterior
+  const getPreviousWeekComparison = () => {
+    const prevWeek = new Date(currentWeek.start);
+    prevWeek.setDate(prevWeek.getDate() - 7);
+    
+    // Aquí podrías implementar lógica para comparar con semana anterior
+    // Por ahora, retornamos datos simulados basados en métricas actuales
+    return {
+      projectsChange: weeklyMetrics.projectsCompleted > 0 ? '+' + weeklyMetrics.projectsCompleted : '0',
+      pointsChange: weeklyMetrics.pointsEarned > 0 ? '+' + weeklyMetrics.pointsEarned : '0',
+      skillsChange: weeklyMetrics.skillsDeveloped > 0 ? '+' + weeklyMetrics.skillsDeveloped : '0',
+      consistencyChange: weeklyMetrics.activeDays > 0 ? weeklyMetrics.activeDays + '/7' : '0/7'
+    };
+  };
+
+  const comparison = getPreviousWeekComparison();
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            📊 Resumen Semanal
-          </CardTitle>
-          <CardDescription>
-            Semana del {mockWeeklySummary.weekStart} al {mockWeeklySummary.weekEnd}
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      {/* Logros de la semana */}
-      <Card>
-        <CardHeader>
-          <CardTitle>🏆 Nuevas Badges Obtenidas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 flex-wrap">
-            {mockWeeklySummary.badgesEarned.map((badge, index) => (
-              <div key={index} className="flex items-center gap-3 p-4 border-2 border-dashed border-green-300 bg-green-50 rounded-lg">
-                <div className="text-3xl">🏆</div>
-                <div>
-                  <div className="font-medium text-green-800">{badge}</div>
-                  <div className="text-sm text-green-600">¡Recién obtenida!</div>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Calendar className="h-6 w-6" />
+                Resumen Semanal
+              </CardTitle>
+              <CardDescription className="text-base mt-2">
+                Semana {currentWeek.weekNumber} del {currentWeek.year} • {currentWeek.start.toLocaleDateString()} - {currentWeek.end.toLocaleDateString()}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-sm">
+                {weeklyMetrics.activeDays}/7 días activos
+              </Badge>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Insights principales */}
-      <Card>
-        <CardHeader>
-          <CardTitle>💡 Insights de tu Progreso</CardTitle>
-          <CardDescription>
-            Análisis automático de tu rendimiento semanal
-          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mockWeeklySummary.insights.map((insight, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                <div className="text-blue-600 mt-1">
-                  {index === 0 ? '📈' : index === 1 ? '💪' : index === 2 ? '🚀' : '⭐'}
-                </div>
-                <div className="text-blue-800 text-sm">{insight}</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
       </Card>
 
-      {/* Métricas de la semana */}
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* Métricas principales */}
+      <div className="grid md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle>📚 Actividad de Aprendizaje</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Proyectos Completados</span>
-                <span className="font-bold">3/3</span>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Target className="h-5 w-5 text-blue-600" />
               </div>
-              <Progress value={100} className="h-2" />
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Días Activos</span>
-                <span className="font-bold">5/7</span>
+              <div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {weeklyMetrics.projectsCompleted}
+                </div>
+                <div className="text-sm text-gray-600">Proyectos</div>
+                <div className="text-xs text-blue-500">{comparison.projectsChange} vs anterior</div>
               </div>
-              <Progress value={71} className="h-2" />
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Tiempo de Enfoque</span>
-                <span className="font-bold">12.5h</span>
-              </div>
-              <Progress value={83} className="h-2" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>🎯 Objetivos Cumplidos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="text-green-500">✅</div>
-                <div className="text-sm">Completar reto de finanzas</div>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Zap className="h-5 w-5 text-green-600" />
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-green-500">✅</div>
-                <div className="text-sm">Escribir 5 reflexiones diarias</div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {weeklyMetrics.pointsEarned}
+                </div>
+                <div className="text-sm text-gray-600">XP Ganada</div>
+                <div className="text-xs text-green-500">{comparison.pointsChange} vs anterior</div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-green-500">✅</div>
-                <div className="text-sm">Obtener certificación básica</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Brain className="h-5 w-5 text-purple-600" />
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-yellow-500">⏳</div>
-                <div className="text-sm">Conectar con 3 profesionales</div>
+              <div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {weeklyMetrics.skillsDeveloped}
+                </div>
+                <div className="text-sm text-gray-600">Habilidades</div>
+                <div className="text-xs text-purple-500">{comparison.skillsChange} vs anterior</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Clock className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {weeklyMetrics.averageScore}%
+                </div>
+                <div className="text-sm text-gray-600">Score Promedio</div>
+                <div className="text-xs text-orange-500">{comparison.consistencyChange} días</div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Comparación con semanas anteriores */}
+      {/* Objetivos semanales */}
       <Card>
         <CardHeader>
-          <CardTitle>📈 Tendencias de Progreso</CardTitle>
-          <CardDescription>
-            Comparación con las últimas 4 semanas
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">+15%</div>
-              <div className="text-sm text-green-700">Tiempo de enfoque</div>
-              <div className="text-xs text-green-600">vs semana anterior</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">+2</div>
-              <div className="text-sm text-blue-700">Proyectos completados</div>
-              <div className="text-xs text-blue-600">Nuevo récord personal</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">85%</div>
-              <div className="text-sm text-purple-700">Consistencia diaria</div>
-              <div className="text-xs text-purple-600">Excelente racha</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">A+</div>
-              <div className="text-sm text-orange-700">Calidad promedio</div>
-              <div className="text-xs text-orange-600">Mejorando constantemente</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recomendaciones para la próxima semana */}
-      <Card>
-        <CardHeader>
-          <CardTitle>🎯 Recomendaciones para la Próxima Semana</CardTitle>
-          <CardDescription>
-            Sugerencias personalizadas basadas en tu progreso
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">🚀 Desafío Semanal</h4>
-              <p className="text-sm text-blue-800">
-                Intenta completar el reto de Marketing Digital avanzado. Basado en tu fortaleza en análisis, 
-                te será más fácil conectar ambas disciplinas.
-              </p>
-            </div>
-            
-            <div className="p-4 border border-green-200 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-green-900 mb-2">💡 Área de Mejora</h4>
-              <p className="text-sm text-green-800">
-                Considera dedicar 30 minutos adicionales diarios a networking profesional. 
-                Tu perfil técnico está fuerte, ahora es momento de ampliar tu red.
-              </p>
-            </div>
-            
-            <div className="p-4 border border-purple-200 bg-purple-50 rounded-lg">
-              <h4 className="font-medium text-purple-900 mb-2">🎓 Oportunidad de Crecimiento</h4>
-              <p className="text-sm text-purple-800">
-                Hay una certificación en Análisis de Datos que encaja perfectamente con tu trayectoria. 
-                Podrías completarla en 2-3 sesiones de estudio.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Compartir logros */}
-      <Card>
-        <CardHeader>
-          <CardTitle>🌟 Comparte tus Logros</CardTitle>
-          <CardDescription>
-            Celebra tu progreso y motiva a otros
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 bg-gray-50 border rounded-lg">
-              <p className="text-sm font-medium mb-2">Post sugerido para LinkedIn:</p>
-              <p className="text-sm text-gray-700 italic">
-                &ldquo;{mockWeeklySummary.shareableHighlights}&rdquo;
-              </p>
-            </div>
-            
-            <div className="flex gap-3">
-              <Button onClick={shareToLinkedIn} className="flex-1">
-                Compartir en LinkedIn 💼
-              </Button>
-              <Button variant="outline" className="flex-1">
-                Copiar al Portapapeles 📋
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Navegación */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium">¿Listo para la próxima semana?</h3>
-              <p className="text-sm text-gray-600">
-                Continúa construyendo tu portafolio profesional
-              </p>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Objetivos Semanales
+              </CardTitle>
+              <CardDescription>
+                Metas que estableciste para esta semana
+              </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => window.location.href = '/daily'}>
-                Diario Hoy 📔
-              </Button>
-              <Button onClick={() => window.location.href = '/portfolio'}>
-                Nuevos Retos 🚀
-              </Button>
-            </div>
+            <Button 
+              onClick={() => setShowGoalForm(true)}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Objetivo
+            </Button>
           </div>
+        </CardHeader>
+        <CardContent>
+          {weeklyGoals.length > 0 ? (
+            <div className="space-y-4">
+              {weeklyGoals.map((goal) => (
+                <div key={goal.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                  <div className="flex-shrink-0">
+                    {goal.completed ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className={`font-medium ${goal.completed ? 'line-through text-gray-500' : ''}`}>
+                      {goal.title}
+                    </h4>
+                    {goal.description && (
+                      <p className="text-sm text-gray-600 mt-1">{goal.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Progress 
+                        value={Math.min((goal.currentValue / goal.targetValue) * 100, 100)} 
+                        className="flex-1 h-2"
+                      />
+                      <span className="text-sm text-gray-600">
+                        {goal.currentValue}/{goal.targetValue}
+                      </span>
+                    </div>
+                  </div>
+                  {goal.completed && (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      Completado
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Target className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p>No hay objetivos establecidos para esta semana.</p>
+              <p className="text-sm">¡Agrega tu primer objetivo!</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Formulario de nuevo objetivo */}
+      {showGoalForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Nuevo Objetivo Semanal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="goal-title">Título del Objetivo</Label>
+                <Input
+                  id="goal-title"
+                  value={newGoal.title}
+                  onChange={(e) => setNewGoal(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Ej: Completar 3 proyectos de comunicación"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="goal-description">Descripción (opcional)</Label>
+                <Textarea
+                  id="goal-description"
+                  value={newGoal.description}
+                  onChange={(e) => setNewGoal(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe más detalles sobre tu objetivo..."
+                  rows={2}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="goal-type">Tipo de Objetivo</Label>
+                  <select
+                    id="goal-type"
+                    value={newGoal.type}
+                    onChange={(e) => setNewGoal(prev => ({ ...prev, type: e.target.value as WeeklyGoal['type'] }))}
+                    className="w-full p-2 border rounded-lg"
+                  >
+                    <option value="projects">Proyectos Completados</option>
+                    <option value="daily_logs">Reflexiones Diarias</option>
+                    <option value="streak">Días Consecutivos</option>
+                    <option value="points">Puntos de Experiencia</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="goal-target">Meta Numérica</Label>
+                  <Input
+                    id="goal-target"
+                    type="number"
+                    min="1"
+                    value={newGoal.targetValue}
+                    onChange={(e) => setNewGoal(prev => ({ ...prev, targetValue: parseInt(e.target.value) || 1 }))}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button onClick={addWeeklyGoal} className="bg-blue-600 hover:bg-blue-700">
+                  Agregar Objetivo
+                </Button>
+                <Button variant="outline" onClick={() => setShowGoalForm(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Habilidades desarrolladas */}
+      {weeklyMetrics.topSkills.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              Habilidades Desarrolladas Esta Semana
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {weeklyMetrics.topSkills.map(({ skill, count }) => (
+                <div key={skill} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="font-medium">{skill}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">{count} proyecto{count > 1 ? 's' : ''}</span>
+                    <Badge variant="outline">{count}x</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Insights automáticos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Insights de tu Progreso
+          </CardTitle>
+          <CardDescription>
+            Análisis automático de tu rendimiento semanal
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {insights.map((insight, index) => (
+              <div key={index} className="flex items-start gap-3 p-4 border rounded-lg">
+                <div className="text-2xl">{insight.icon}</div>
+                <div className="flex-1">
+                  <h4 className={`font-medium ${insight.color}`}>
+                    {insight.title}
+                  </h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {insight.description}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {insight.type}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Proyectos de la semana */}
+      {weeklyMetrics.weeklyProjects.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              Proyectos Completados Esta Semana
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-4">
+              {weeklyMetrics.weeklyProjects.map((project) => (
+                <div key={project.id} className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">{project.title}</h4>
+                  <p className="text-sm text-gray-600 mb-3">{project.description}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-2">
+                      {project.skills?.slice(0, 2).map((skill) => (
+                        <Badge key={skill} variant="outline" className="text-xs">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                    <Badge variant="secondary">{project.score}%</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Compartir progreso */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Comparte tu Progreso Semanal
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SocialSharing
+            type="progress"
+            customText={`🚀 Mi progreso semanal en habilidades blandas:\n\n✅ ${weeklyMetrics.projectsCompleted} proyectos completados\n⚡ ${weeklyMetrics.pointsEarned} XP ganada\n🧠 ${weeklyMetrics.skillsDeveloped} habilidades desarrolladas\n🎯 Score promedio: ${weeklyMetrics.averageScore}%\n\n¡Cada semana es una oportunidad de crecimiento! 💪`}
+          />
         </CardContent>
       </Card>
     </div>
