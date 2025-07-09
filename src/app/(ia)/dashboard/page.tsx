@@ -1,10 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Gamification } from "@/components/ui/gamification";
+import { useUserProgress } from "@/hooks/useLocalStorage";
 
 export default function DashboardPage() {
+  const { progress } = useUserProgress();
+  // const { addPoints } = useUserProgress(); // Will be used later
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
@@ -29,59 +34,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Progress Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="skill-card gradient-emotional text-white">
-            <CardHeader className="text-center">
-              <div className="text-3xl mb-2">💝</div>
-              <CardTitle className="text-white">Inteligencia Emocional</CardTitle>
-              <CardDescription className="text-white/80">
-                Tu capacidad de conectar con otros
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center">
-                <div className="text-3xl font-bold mb-2">75%</div>
-                <Progress value={75} className="h-2 bg-white/20" />
-                <p className="text-sm mt-2 text-white/90">En desarrollo</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="skill-card gradient-growth text-white">
-            <CardHeader className="text-center">
-              <div className="text-3xl mb-2">🚀</div>
-              <CardTitle className="text-white">Crecimiento Personal</CardTitle>
-              <CardDescription className="text-white/80">
-                Tu evolución y adaptabilidad
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center">
-                <div className="text-3xl font-bold mb-2">60%</div>
-                <Progress value={60} className="h-2 bg-white/20" />
-                <p className="text-sm mt-2 text-white/90">Explorando</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="skill-card gradient-skills text-white">
-            <CardHeader className="text-center">
-              <div className="text-3xl mb-2">🎯</div>
-              <CardTitle className="text-white">Impacto Profesional</CardTitle>
-              <CardDescription className="text-white/80">
-                Tu influencia en equipos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center">
-                <div className="text-3xl font-bold mb-2">45%</div>
-                <Progress value={45} className="h-2 bg-white/20" />
-                <p className="text-sm mt-2 text-white/90">Iniciando</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Progress Overview - Gamification */}
+        <Gamification size="full" showAchievements={true} />
 
         {/* Journey Steps */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -217,7 +171,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-600">
-                    Última entrada: Hace 2 días
+                    Racha: {progress.currentStreak} días
                   </div>
                   <Badge variant="outline" className="text-orange-600 border-orange-300">
                     Pendiente
