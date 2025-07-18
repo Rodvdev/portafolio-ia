@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface ServiceWorkerHook {
   isRegistered: boolean;
   isSupported: boolean;
-  sendMessage: (type: string, data?: any) => void;
+  sendMessage: (type: string, data?: unknown) => void;
   requestNotificationPermission: () => Promise<boolean>;
 }
 
@@ -12,17 +12,7 @@ export const useServiceWorker = (): ServiceWorkerHook => {
   const [isSupported, setIsSupported] = useState(false);
   const swRegistration = useRef<ServiceWorkerRegistration | null>(null);
 
-  useEffect(() => {
-    // Verificar soporte para Service Workers
-    if ('serviceWorker' in navigator) {
-      setIsSupported(true);
-      registerServiceWorker();
-    } else {
-      console.log('Service Workers no soportados en este navegador');
-    }
-  }, []);
-
-  const registerServiceWorker = async () => {
+  const registerServiceWorker = useCallback(async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/'
@@ -52,7 +42,17 @@ export const useServiceWorker = (): ServiceWorkerHook => {
     } catch (error) {
       console.error('❌ Error registrando Service Worker:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Verificar soporte para Service Workers
+    if ('serviceWorker' in navigator) {
+      setIsSupported(true);
+      registerServiceWorker();
+    } else {
+      console.log('Service Workers no soportados en este navegador');
+    }
+  }, [registerServiceWorker]);
 
   const handleServiceWorkerMessage = (event: MessageEvent) => {
     const { type, data } = event.data;
@@ -70,7 +70,7 @@ export const useServiceWorker = (): ServiceWorkerHook => {
     }
   };
 
-  const sendMessage = (type: string, data?: any) => {
+  const sendMessage = (type: string, data?: unknown) => {
     if (!isRegistered || !swRegistration.current?.active) {
       console.warn('Service Worker no disponible para enviar mensaje');
       return;

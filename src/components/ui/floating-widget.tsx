@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, useDragControls } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, Maximize2, Minimize2, X, Play, Pause, Square } from 'lucide-react';
@@ -8,7 +8,6 @@ import { Volume2, VolumeX, Maximize2, Minimize2, X, Play, Pause, Square } from '
 interface FloatingWidgetProps {
   isVisible: boolean;
   timeLeft: number;
-  isRunning: boolean;
   isPaused: boolean;
   currentMantra: string;
   currentTheme: {
@@ -41,7 +40,6 @@ interface FloatingWidgetProps {
 const FloatingWidget: React.FC<FloatingWidgetProps> = ({
   isVisible,
   timeLeft,
-  isRunning,
   isPaused,
   currentMantra,
   currentTheme,

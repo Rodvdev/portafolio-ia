@@ -313,7 +313,7 @@ const PomodoroFocus = () => {
   // Variable eliminada: canStartRandom no utilizada
   
   // Referencias
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<(NodeJS.Timeout & { backup?: NodeJS.Timeout }) | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -602,7 +602,9 @@ const PomodoroFocus = () => {
     }, 5000);
     
     // Guardar referencia del temporizador de respaldo
-    (intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup = backupInterval;
+    if (intervalRef.current) {
+      intervalRef.current.backup = backupInterval;
+    }
   }, [isMuted, isPaused, isStarted, swRegistered, sendSWMessage, requestNotificationPermission, theme, selectedMusic, syncTimeWithReality]);
 
   // Función para pausar
@@ -610,8 +612,8 @@ const PomodoroFocus = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       // Limpiar temporizador de respaldo también
-      if ((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup) {
-        clearInterval((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup);
+      if (intervalRef.current.backup) {
+        clearInterval(intervalRef.current.backup);
       }
     }
     setIsPaused(true);
@@ -654,7 +656,9 @@ const PomodoroFocus = () => {
       }
     }, 5000);
     
-    (intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup = backupInterval;
+    if (intervalRef.current) {
+      intervalRef.current.backup = backupInterval;
+    }
   };
 
   // Función para generar insights de la sesión
@@ -689,8 +693,8 @@ const PomodoroFocus = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       // Limpiar temporizador de respaldo también
-      if ((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup) {
-        clearInterval((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup);
+      if (intervalRef.current.backup) {
+        clearInterval(intervalRef.current.backup);
       }
     }
     
@@ -897,8 +901,8 @@ const PomodoroFocus = () => {
       // Limpiar intervalos
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
-        if ((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup) {
-          clearInterval((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup);
+        if (intervalRef.current.backup) {
+          clearInterval(intervalRef.current.backup);
         }
       }
       
@@ -1745,30 +1749,29 @@ const PomodoroFocus = () => {
         </div>
 
         {/* Widget flotante */}
-        <FloatingWidget
-          isVisible={showWidget && (isStarted || isPaused)}
-          timeLeft={timeLeft}
-          isRunning={!isPaused}
-          isPaused={isPaused}
-          currentMantra={mantras[currentSlide] || "Preparando tu enfoque sagrado..."}
-          currentTheme={currentTheme}
-          currentMusic={currentMusic}
-          flowPhase={flowPhase}
-          flowIntensity={flowIntensity}
-          purpose={purpose}
-          size={widgetSize}
-          showMantras={showMantras}
-          isMuted={isMuted}
-          position={widgetPosition}
-          onPositionChange={handleWidgetPositionChange}
-          onSizeChange={handleWidgetSizeChange}
-          onMantrasToggle={handleMantrasToggle}
-          onMuteToggle={() => setIsMuted(!isMuted)}
-          onPause={pauseFocus}
-          onResume={resumeFocus}
-          onStop={stopFocus}
-          onClose={handleWidgetClose}
-        />
+                  <FloatingWidget
+            isVisible={showWidget && (isStarted || isPaused)}
+            timeLeft={timeLeft}
+            isPaused={isPaused}
+            currentMantra={mantras[currentSlide] || "Preparando tu enfoque sagrado..."}
+            currentTheme={currentTheme}
+            currentMusic={currentMusic}
+            flowPhase={flowPhase}
+            flowIntensity={flowIntensity}
+            purpose={purpose}
+            size={widgetSize}
+            showMantras={showMantras}
+            isMuted={isMuted}
+            position={widgetPosition}
+            onPositionChange={handleWidgetPositionChange}
+            onSizeChange={handleWidgetSizeChange}
+            onMantrasToggle={handleMantrasToggle}
+            onMuteToggle={() => setIsMuted(!isMuted)}
+            onPause={pauseFocus}
+            onResume={resumeFocus}
+            onStop={stopFocus}
+            onClose={handleWidgetClose}
+          />
       </div>
     </div>
   );

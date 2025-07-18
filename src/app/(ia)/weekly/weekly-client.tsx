@@ -2,57 +2,21 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { useUserProgress } from "@/hooks/useLocalStorage";
-import { SocialSharing } from "@/components/ui/social-sharing";
 import { 
   Calendar, 
   Target, 
-  TrendingUp, 
-  Award, 
-  CheckCircle2, 
-  Circle, 
-  Plus,
   Clock,
-  Users,
   Brain,
   Zap
 } from "lucide-react";
 
-interface WeeklyGoal {
-  id: string;
-  title: string;
-  description: string;
-  targetValue: number;
-  currentValue: number;
-  type: 'projects' | 'tests' | 'daily_logs' | 'streak' | 'points' | 'custom';
-  completed: boolean;
-  createdAt: string;
-}
 
-interface WeeklyInsight {
-  type: 'improvement' | 'strength' | 'recommendation' | 'achievement';
-  title: string;
-  description: string;
-  icon: string;
-  color: string;
-}
 
 export default function WeeklyClientPage() {
   const { progress } = useUserProgress();
   const [currentWeek] = useState(getCurrentWeek());
-  const [showGoalForm, setShowGoalForm] = useState(false);
-  const [newGoal, setNewGoal] = useState({
-    title: '',
-    description: '',
-    targetValue: 1,
-    type: 'projects' as WeeklyGoal['type']
-  });
 
   // Obtener semana actual
   function getCurrentWeek() {
@@ -76,20 +40,7 @@ export default function WeeklyClientPage() {
     return Math.ceil((days + startOfYear.getDay() + 1) / 7);
   }
 
-  // Obtener objetivos semanales
-  const getWeeklyGoals = (): WeeklyGoal[] => {
-    if (typeof window === 'undefined') return [];
-    const weekKey = `${currentWeek.year}-W${currentWeek.weekNumber}`;
-    const goals = localStorage.getItem(`weeklyGoals-${weekKey}`);
-    return goals ? JSON.parse(goals) : [];
-  };
 
-  // Guardar objetivos semanales
-  const saveWeeklyGoals = (goals: WeeklyGoal[]) => {
-    if (typeof window === 'undefined') return;
-    const weekKey = `${currentWeek.year}-W${currentWeek.weekNumber}`;
-    localStorage.setItem(`weeklyGoals-${weekKey}`, JSON.stringify(goals));
-  };
 
   // Calcular métricas semanales
   const calculateWeeklyMetrics = () => {
@@ -136,7 +87,6 @@ export default function WeeklyClientPage() {
 
   // Resto del código igual que antes...
   const weeklyMetrics = calculateWeeklyMetrics();
-  const weeklyGoals = getWeeklyGoals();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-green-50">

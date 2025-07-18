@@ -9,7 +9,6 @@ export function useLocalStorage<T>(
 ): [T, (value: T | ((val: T) => T)) => void] {
   // Estado para almacenar el valor
   const [storedValue, setStoredValue] = useState<T>(initialValue);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   // Cargar desde localStorage en el cliente
   useEffect(() => {
@@ -22,7 +21,6 @@ export function useLocalStorage<T>(
       } catch (error) {
         console.error(`Error reading localStorage key "${key}":`, error);
       }
-      setIsLoaded(true);
     }
   }, [key]);
 
