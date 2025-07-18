@@ -310,6 +310,9 @@ const PomodoroFocus = () => {
   const [widgetSize, setWidgetSize] = useState<'small' | 'large'>('small');
   const [widgetPosition, setWidgetPosition] = useState({ x: 20, y: 20 });
   const [showMantras, setShowMantras] = useState(true);
+  
+  // Estado para el mensaje de navegación
+  const [showNavigationTip, setShowNavigationTip] = useState(true);
   // Variable eliminada: canStartRandom no utilizada
   
   // Referencias
@@ -411,7 +414,7 @@ const PomodoroFocus = () => {
       duration: 9000
     },
     {
-      text: "Cuando estás presente, cuando desapareces en lo que haces, entras en estado de FLOW.",
+      text: "Cuando estás presente, cuando desapareces en lo que haces, entras en estado de VIBRACIÓN.",
       duration: 9000
     },
     {
@@ -935,11 +938,12 @@ const PomodoroFocus = () => {
     };
   }, []);
 
-  // Efecto para cargar preferencias del widget
+  // Efecto para cargar preferencias del widget y mensaje de navegación
   useEffect(() => {
     const savedPosition = localStorage.getItem('widget-position');
     const savedSize = localStorage.getItem('widget-size');
     const savedMantras = localStorage.getItem('widget-show-mantras');
+    const savedNavigationTip = localStorage.getItem('navigation-tip-dismissed');
 
     if (savedPosition) {
       try {
@@ -959,6 +963,10 @@ const PomodoroFocus = () => {
       } catch {
         console.log('Error loading mantras preference');
       }
+    }
+
+    if (savedNavigationTip) {
+      setShowNavigationTip(false);
     }
   }, []);
 
@@ -1317,6 +1325,35 @@ const PomodoroFocus = () => {
             <RotateCcw size={16} />
           </Button>
         </div>
+
+        {/* Mensaje de navegación */}
+        {showNavigationTip && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md"
+          >
+            <div className="bg-black/40 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/20 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">💡</span>
+                <span className="text-sm text-white">
+                  Puedes navegar por otras páginas mientras tu Pomodoro está activo
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowNavigationTip(false);
+                  localStorage.setItem('navigation-tip-dismissed', 'true');
+                }}
+                className="text-white/70 hover:text-white text-lg leading-none"
+                title="Cerrar mensaje"
+              >
+                ×
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Información de sesión y estado de flow */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 z-50">
