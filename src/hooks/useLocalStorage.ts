@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PortfolioItem, DailyLog, WeeklySummary } from '@/types';
 
 export function useLocalStorage<T>(
@@ -8,19 +8,23 @@ export function useLocalStorage<T>(
   initialValue: T
 ): [T, (value: T | ((val: T) => T)) => void] {
   // Estado para almacenar el valor
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === 'undefined') {
-      return initialValue;
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Cargar desde localStorage en el cliente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const item = window.localStorage.getItem(key);
+        if (item) {
+          setStoredValue(JSON.parse(item));
+        }
+      } catch (error) {
+        console.error(`Error reading localStorage key "${key}":`, error);
+      }
+      setIsLoaded(true);
     }
-    
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
-    }
-  });
+  }, [key]);
 
   // Función para actualizar el valor
   const setValue = (value: T | ((val: T) => T)) => {

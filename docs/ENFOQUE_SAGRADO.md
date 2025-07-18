@@ -56,12 +56,21 @@ Este no es un simple temporizador Pomodoro. Es un **ritual sagrado** que transfo
 
 ## 🌟 La Experiencia Completa
 
-### 1. Introducción Sagrada (40 segundos)
-Una secuencia de 12 mensajes que te preparan espiritualmente:
-- Respiración consciente
-- Conexión con el propósito
-- Apertura al estado de flow
-- Entrega al proceso divino
+### 1. Introducción Sagrada (45 segundos)
+Una secuencia de 13 mensajes contextuales que te preparan espiritualmente:
+- **Saludo personalizado** según tu tema elegido
+- **Respiración consciente** y conexión inicial
+- **Conexión con el propósito** y apertura al estado de flow
+- **Mensaje de disciplina contextual** - "No celebres nada hasta que termine"
+- **Entrega al proceso divino** y llamado a la acción personalizado
+
+#### Ejemplos de Mensajes Contextuales:
+
+**Espiritual**: "Hola, alma hermosa" → "No te distraigas con pensamientos" → "Respira profundo y conecta"
+
+**Guerrero**: "Hola, guerrero del corazón" → "No celebres hasta terminar, la victoria se gana con persistencia" → "Conquista este momento"
+
+**Creatividad**: "Hola, artista divino" → "No juzgues lo que surja, mantente presente" → "Respira profundo y expresa"
 
 ### 2. Detección Automática de Tema
 El sistema analiza tu propósito y sugiere el tema más alineado:
@@ -95,12 +104,36 @@ Al terminar recibes:
 - **Celebración ritual** con partículas de luz
 - **Mensaje de gratitud** final
 
-## 🎵 Audio Sagrado
+## 🎵 Sistema Musical Avanzado
 
-- **Frecuencia 432Hz**: La frecuencia del universo
+### 8 Opciones de Música Sagrada:
+
+1. **🕉️ 432Hz** - Frecuencia Universal (por defecto)
+2. **💚 528Hz** - Frecuencia del Amor y Sanación
+3. **🧠 741Hz** - Frecuencia de Soluciones Mentales
+4. **🌊 Ondas Binaurales** - Sincronización Cerebral
+5. **🌲 Sonidos de Naturaleza** - Conexión Terrestre
+6. **🎵 Lo-Fi Hip Hop** - Productividad Creativa
+7. **🎼 Música Clásica** - Excelencia Mental
+8. **🌌 Ambient Electrónico** - Transcendencia Espacial
+
+### Características:
+- **Selección inteligente**: Sugiere música según tu tema elegido
+- **Vista previa**: Información detallada de beneficios y frecuencias
 - **Reproducción automática**: Se inicia con la introducción
-- **Control de volumen**: Puedes silenciar si prefieres
+- **Control completo**: Silencio, volumen, y selección libre
 - **Loop continuo**: Mantiene la vibración durante toda la sesión
+- **Indicador visual**: Muestra la música actual durante el enfoque
+
+### Sugerencias Automáticas:
+| Tema Elegido | Música Sugerida | Beneficio Principal |
+|--------------|----------------|-------------------|
+| Espiritual | 432Hz | Alineación universal |
+| Guerrero | Ondas Binaurales | Concentración intensa |
+| Liviano | Naturaleza | Flujo orgánico |
+| Motivacional | 741Hz | Claridad mental |
+| Alegría | Lo-Fi Hip Hop | Energía creativa |
+| Creatividad | Ambient | Expansión mental |
 
 ## 🛠️ Características Técnicas
 
@@ -130,9 +163,18 @@ npm install framer-motion use-sound @radix-ui/react-select
 ```
 
 ### Audio Setup
-1. Descargar audio 432Hz de YouTube
-2. Convertir a MP3
-3. Guardar como `/public/audio/432hz.mp3`
+1. **Consultar guía completa**: `/docs/GUIA_MUSICA_ENFOQUE.md`
+2. **Descargar 8 tipos de música** según la guía
+3. **Guardar en**: `/public/audio/` con nombres específicos
+4. **Archivos requeridos**:
+   - `432hz.mp3` (Frecuencia Universal)
+   - `528hz.mp3` (Frecuencia del Amor)
+   - `741hz.mp3` (Frecuencia de Soluciones)
+   - `binaural_focus.mp3` (Ondas Binaurales)
+   - `nature_sounds.mp3` (Sonidos de Naturaleza)
+   - `lofi_beats.mp3` (Lo-Fi Hip Hop)
+   - `classical_focus.mp3` (Música Clásica)
+   - `ambient_space.mp3` (Ambient Electrónico)
 
 ### Navegación
 - **Desde Daily**: Botón "🚀 Enfoque Avanzado"

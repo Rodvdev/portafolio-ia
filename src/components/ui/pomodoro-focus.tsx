@@ -1,6 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+
+// Declaración de tipos para Web APIs
+declare global {
+  interface WakeLockSentinel {
+    release(): Promise<void>;
+    addEventListener(type: string, listener: () => void): void;
+    removeEventListener(type: string, listener: () => void): void;
+  }
+}
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,6 +19,8 @@ import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, Square, Volume2, VolumeX, Maximize2, Minimize2 } from 'lucide-react';
 import { useFocusStats } from '@/hooks/useFocusStats';
+import { useServiceWorker } from '@/hooks/useServiceWorker';
+import FloatingWidget from './floating-widget';
 
 // Tipos de datos
 interface ThemeConfig {
@@ -21,14 +32,17 @@ interface ThemeConfig {
   description: string;
 }
 
-interface FocusSession {
+interface MusicOption {
   id: string;
-  purpose: string;
-  theme: string;
-  duration: number;
-  completedAt: string;
-  mantrasShown: number;
+  name: string;
+  emoji: string;
+  description: string;
+  frequency?: string;
+  fileName: string;
+  benefits: string[];
 }
+
+// Eliminada interface FocusSession no utilizada
 
 // Configuración de temas
 const THEMES: Record<string, ThemeConfig> = {
@@ -198,6 +212,37 @@ const detectTheme = (text: string): string => {
   return 'espiritual'; // default
 };
 
+// Configuración de opciones musicales
+const MUSIC_OPTIONS: MusicOption[] = [
+  {
+    id: "432hz",
+    name: "432Hz - Frecuencia Universal",
+    emoji: "🕉️",
+    description: "La frecuencia del universo, resonancia natural",
+    frequency: "432Hz",
+    fileName: "432-Hz.mp3",
+    benefits: ["Reduce ansiedad", "Alineación natural", "Paz profunda", "Conexión cósmica"]
+  },
+  {
+    id: "orishas-kilo",
+    name: "Orishas - El Kilo",
+    emoji: "🎤",
+    description: "Hip hop cubano con energía espiritual urbana",
+    frequency: "Hip Hop Flow",
+    fileName: "Orishas-El-Kilo-Album-El-Kilo.mp3",
+    benefits: ["Energía poderosa", "Motivación urbana", "Flow creativo", "Fuerza interior"]
+  },
+  {
+    id: "orishas-reina",
+    name: "Orishas - Reina De La Calle",
+    emoji: "👑",
+    description: "Ritmo urbano con alma latina para fluir con determinación",
+    frequency: "Urban Beats",
+    fileName: "Orishas-Reina-De-La-Calle-Album-El-Kilo.mp3",
+    benefits: ["Poder personal", "Determinación", "Flow urbano", "Confianza"]
+  }
+];
+
 // Mock data para sesiones pasadas (solo si no hay datos reales)
 const getMockSessions = () => [
   {
@@ -230,9 +275,13 @@ const PomodoroFocus = () => {
   // Hook de estadísticas
   const { stats, saveSession, getRecentSessions } = useFocusStats();
   
+  // Hook del Service Worker
+  const { isRegistered: swRegistered, sendMessage: sendSWMessage, requestNotificationPermission } = useServiceWorker();
+  
   // Estados principales
   const [purpose, setPurpose] = useState('');
   const [theme, setTheme] = useState('espiritual');
+  const [selectedMusic, setSelectedMusic] = useState('432hz');
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -256,27 +305,92 @@ const PomodoroFocus = () => {
   const [showPostReflection, setShowPostReflection] = useState(false);
   const [sessionInsights, setSessionInsights] = useState<string[]>([]);
   
+  // Estados del widget
+  const [showWidget, setShowWidget] = useState(false);
+  const [widgetSize, setWidgetSize] = useState<'small' | 'large'>('small');
+  const [widgetPosition, setWidgetPosition] = useState({ x: 20, y: 20 });
+  const [showMantras, setShowMantras] = useState(true);
+  // Variable eliminada: canStartRandom no utilizada
+  
   // Referencias
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const lastUpdateRef = useRef<number>(Date.now());
+  const visibilityRef = useRef<boolean>(true);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   // Configuración actual
   const currentTheme = THEMES[theme];
   const mantras = currentTheme.mantras;
+  const currentMusic = MUSIC_OPTIONS.find(m => m.id === selectedMusic) || MUSIC_OPTIONS[0];
 
-  // Función para calcular velocidad de lectura basada en caracteres
-  const calculateSlideDuration = (text: string): number => {
-    const wordsPerMinute = 200; // velocidad promedio de lectura
-    const words = text.split(' ').length;
-    const minutes = words / wordsPerMinute;
-    return Math.max(3, Math.min(10, minutes * 60)); // entre 3 y 10 segundos
+  // Función para sugerir música según el tema
+  const getSuggestedMusic = (selectedTheme: string): string => {
+    const suggestions = {
+      espiritual: '432hz',
+      guerrero: 'orishas-reina',
+      liviano: '432hz',
+      motivacional: 'orishas-kilo',
+      alegria: 'orishas-kilo',
+      creatividad: 'orishas-reina'
+    };
+    
+    return suggestions[selectedTheme as keyof typeof suggestions] || '432hz';
+  };
+
+  // Función eliminada: calculateSlideDuration no utilizada
+
+  // Función para generar mensaje contextual de disciplina
+  const getDisciplineMessage = (selectedTheme: string): string => {
+    const messages = {
+      espiritual: "No te distraigas con pensamientos. Mantente presente en este espacio sagrado.",
+      guerrero: "No celebres nada hasta que haya terminado tu enfoque. La victoria se gana con persistencia.",
+      liviano: "No te vayas hacia la resistencia. Fluye y mantente aquí, en calma.",
+      motivacional: "No te distraigas con excusas. Tu futuro depende de estos próximos minutos.",
+      alegria: "No dejes que la mente te robe esta alegría. Mantente presente en la celebración del ahora.",
+      creatividad: "No juzgues lo que surja. No te vayas. Quédate presente para recibir la inspiración."
+    };
+    
+    return messages[selectedTheme as keyof typeof messages] || 
+           "No celebres nada hasta que haya terminado tu enfoque. No te distraigas. Quédate presente.";
+  };
+
+  // Función para generar mensaje final contextual
+  const getFinalMessage = (selectedTheme: string): string => {
+    const messages = {
+      espiritual: "Vamos juntos hacia lo sagrado. Respira profundo y conecta...",
+      guerrero: "Vamos, guerrero. Respira profundo y conquista este momento...", 
+      liviano: "Vamos suavemente. Respira profundo y fluye...",
+      motivacional: "Vamos a crear magia. Respira profundo y actúa...",
+      alegria: "Vamos a celebrar la vida. Respira profundo y brilla...",
+      creatividad: "Vamos a crear belleza. Respira profundo y expresa..."
+    };
+    
+    return messages[selectedTheme as keyof typeof messages] || 
+           "Vamos juntos. Respira profundo y empezamos...";
+  };
+
+  // Función para generar saludo contextual
+  const getContextualGreeting = (selectedTheme: string): string => {
+    const greetings = {
+      espiritual: "Hola, alma hermosa. Respira conmigo…",
+      guerrero: "Hola, guerrero del corazón. Respira conmigo…",
+      liviano: "Hola, ser de luz. Respira conmigo…", 
+      motivacional: "Hola, creador de sueños. Respira conmigo…",
+      alegria: "Hola, fuente de alegría. Respira conmigo…",
+      creatividad: "Hola, artista divino. Respira conmigo…"
+    };
+    
+    return greetings[selectedTheme as keyof typeof greetings] || 
+           "Hola, amigo. Respira conmigo…";
   };
 
   // Introducción sagrada
-  const sacredIntroSteps = [
+  const sacredIntroSteps = useMemo(() => [
     {
-      text: "Hola, amigo. Respira conmigo…",
+      text: getContextualGreeting(theme),
       duration: 3000
     },
     {
@@ -304,7 +418,7 @@ const PomodoroFocus = () => {
       duration: 4000
     },
     {
-      text: '"Perderte a ti mismo es encontrarte con Dios." — Sabiduría ancestral',
+      text: '&ldquo;Perderte a ti mismo es encontrarte con Dios.&rdquo; — Sabiduría ancestral',
       duration: 4000
     },
     {
@@ -316,14 +430,121 @@ const PomodoroFocus = () => {
       duration: 4000
     },
     {
+      text: getDisciplineMessage(theme),
+      duration: 4000
+    },
+    {
       text: "Que tu propósito guíe tus manos. Que tu alma sea quien se exprese.",
       duration: 4000
     },
     {
-      text: "Vamos juntos. Respira profundo y empezamos...",
+      text: getFinalMessage(theme),
       duration: 3000
     }
-  ];
+  ], [theme]);
+
+  // Función para solicitar Wake Lock API
+  const requestWakeLock = async () => {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await (navigator as Navigator & { wakeLock: { request: (type: string) => Promise<WakeLockSentinel> } }).wakeLock.request('screen');
+        console.log('🔒 Wake Lock activado - pantalla no se apagará');
+      }
+    } catch (err) {
+      console.log('Wake Lock no disponible:', err);
+    }
+  };
+
+  // Función para liberar Wake Lock
+  const releaseWakeLock = async () => {
+    try {
+      if (wakeLockRef.current) {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+        console.log('🔓 Wake Lock liberado');
+      }
+    } catch (err) {
+      console.log('Error liberando Wake Lock:', err);
+    }
+  };
+
+  // Función para calcular tiempo transcurrido basado en timestamp
+  const calculateElapsedTime = () => {
+    if (!startTimeRef.current) return 0;
+    return Math.floor((Date.now() - startTimeRef.current) / 1000);
+  };
+
+  // Función para sincronizar el tiempo con la realidad
+  const syncTimeWithReality = useCallback(() => {
+    if (!startTimeRef.current || isPaused) return;
+    
+    const elapsedSeconds = calculateElapsedTime();
+    const initialTime = sessionType === 'work' ? 25 * 60 : 
+      (completedSessions % 4 === 0 ? 15 * 60 : 5 * 60);
+    
+    const newTimeLeft = Math.max(0, initialTime - elapsedSeconds);
+    
+    setTimeLeft(newTimeLeft);
+    lastUpdateRef.current = Date.now();
+    
+    if (newTimeLeft <= 0) {
+      handleTimerComplete();
+    }
+  }, [isPaused, sessionType, completedSessions, calculateElapsedTime]);
+
+  // Función para manejar cuando el timer se completa
+  const handleTimerComplete = () => {
+    if (sessionType === 'work') {
+      setCompletedSessions(prev => prev + 1);
+      setTotalFocusTime(prev => prev + 25 * 60);
+      
+      if ((completedSessions + 1) % 4 === 0) {
+        setTimeLeft(15 * 60); // Descanso largo
+      } else {
+        setTimeLeft(5 * 60); // Descanso corto
+      }
+      setSessionType('break');
+    } else {
+      setTimeLeft(25 * 60); // Volver al trabajo
+      setSessionType('work');
+    }
+    
+    // Reiniciar timestamp para nueva sesión
+    startTimeRef.current = Date.now();
+  };
+
+  // Función para inicio aleatorio rápido
+  const startRandomFocus = () => {
+    const randomPurposes = [
+      "Conectar con mi esencia interior",
+      "Crear algo hermoso y significativo", 
+      "Entrenar mi disciplina mental",
+      "Fluir en el momento presente",
+      "Expandir mi consciencia",
+      "Manifestar mis sueños más profundos",
+      "Sanar y transformar energías",
+      "Expresar mi potencial creativo"
+    ];
+    
+    const randomThemes = Object.keys(THEMES);
+    const randomMusic = MUSIC_OPTIONS.map(m => m.id); // Ahora solo 3 opciones
+    
+    // Seleccionar aleatoriamente
+    const randomPurpose = randomPurposes[Math.floor(Math.random() * randomPurposes.length)];
+    const randomTheme = randomThemes[Math.floor(Math.random() * randomThemes.length)];
+    const randomMusicId = randomMusic[Math.floor(Math.random() * randomMusic.length)];
+    
+    // Establecer valores
+    setPurpose(randomPurpose);
+    setTheme(randomTheme);
+    setSelectedMusic(randomMusicId);
+    
+    // Iniciar inmediatamente sin introducción
+    setTimeout(() => {
+      startFocus();
+      setShowWidget(true);
+    }, 100);
+  };
 
   // Función para iniciar la introducción sagrada
   const startSacredIntro = () => {
@@ -341,56 +562,99 @@ const PomodoroFocus = () => {
     setSessionType('work');
     setCurrentSlide(0);
     
-    // Iniciar audio 432Hz
+    // Establecer timestamp de inicio para sincronización precisa
+    startTimeRef.current = Date.now();
+    lastUpdateRef.current = Date.now();
+    
+    // Activar Wake Lock para evitar suspensión del dispositivo
+    requestWakeLock();
+    
+    // Solicitar permisos de notificación
+    requestNotificationPermission();
+    
+    // Iniciar audio
     if (audioRef.current && !isMuted) {
       audioRef.current.loop = true;
       audioRef.current.play().catch(console.error);
     }
     
-    // Iniciar temporizador
-    intervalRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          // Cambiar a descanso o siguiente sesión
-          if (sessionType === 'work') {
-            setCompletedSessions(prev => prev + 1);
-            setTotalFocusTime(prev => prev + 25 * 60);
-            
-            if ((completedSessions + 1) % 4 === 0) {
-              setTimeLeft(15 * 60); // Descanso largo
-            } else {
-              setTimeLeft(5 * 60); // Descanso corto
-            }
-            setSessionType('break');
-          } else {
-            setTimeLeft(25 * 60); // Volver al trabajo
-            setSessionType('work');
-          }
-          return 0;
-        }
-        return prev - 1;
+    // Enviar al Service Worker para persistencia
+    if (swRegistered) {
+      sendSWMessage('START_TIMER', {
+        purpose,
+        theme,
+        music: selectedMusic,
+        totalTime: 25 * 60,
+        startTime: Date.now()
       });
+    }
+    
+    // Temporizador principal con sincronización basada en timestamp
+    intervalRef.current = setInterval(() => {
+      syncTimeWithReality();
     }, 1000);
-  }, [purpose, sessionType, completedSessions, isMuted]);
+    
+    // Temporizador de respaldo cada 5 segundos para recuperación
+    const backupInterval = setInterval(() => {
+      if (!isPaused && isStarted) {
+        syncTimeWithReality();
+      }
+    }, 5000);
+    
+    // Guardar referencia del temporizador de respaldo
+    (intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup = backupInterval;
+  }, [isMuted, isPaused, isStarted, swRegistered, sendSWMessage, requestNotificationPermission, theme, selectedMusic, syncTimeWithReality]);
 
   // Función para pausar
   const pauseFocus = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      // Limpiar temporizador de respaldo también
+      if ((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup) {
+        clearInterval((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup);
+      }
     }
     setIsPaused(true);
     if (audioRef.current) {
       audioRef.current.pause();
+    }
+    
+    // Actualizar timestamp de pausa para cálculos precisos
+    if (startTimeRef.current) {
+      const elapsedSeconds = calculateElapsedTime();
+      const initialTime = sessionType === 'work' ? 25 * 60 : 
+        (completedSessions % 4 === 0 ? 15 * 60 : 5 * 60);
+      const pausedTimeLeft = Math.max(0, initialTime - elapsedSeconds);
+      setTimeLeft(pausedTimeLeft);
     }
   };
 
   // Función para continuar
   const resumeFocus = () => {
     setIsPaused(false);
+    
+    // Recalcular startTime basado en el tiempo restante
+    const initialTime = sessionType === 'work' ? 25 * 60 : 
+      (completedSessions % 4 === 0 ? 15 * 60 : 5 * 60);
+    const elapsedTime = initialTime - timeLeft;
+    startTimeRef.current = Date.now() - (elapsedTime * 1000);
+    
     if (audioRef.current && !isMuted) {
       audioRef.current.play().catch(console.error);
     }
-    startFocus();
+    
+    // Reiniciar temporizadores
+    intervalRef.current = setInterval(() => {
+      syncTimeWithReality();
+    }, 1000);
+    
+    const backupInterval = setInterval(() => {
+      if (!isPaused && isStarted) {
+        syncTimeWithReality();
+      }
+    }, 5000);
+    
+    (intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup = backupInterval;
   };
 
   // Función para generar insights de la sesión
@@ -421,10 +685,22 @@ const PomodoroFocus = () => {
   };
 
   // Función para detener
-  const stopFocus = () => {
+  const stopFocus = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      // Limpiar temporizador de respaldo también
+      if ((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup) {
+        clearInterval((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup);
+      }
     }
+    
+    // Detener timer en Service Worker
+    if (swRegistered) {
+      sendSWMessage('STOP_TIMER');
+    }
+    
+    // Liberar Wake Lock
+    releaseWakeLock();
     
     // Generar insights antes de limpiar estado
     const insights = generateSessionInsights();
@@ -444,17 +720,42 @@ const PomodoroFocus = () => {
     setIsPaused(false);
     setShowPostReflection(true);
     setCurrentSlide(0);
+    
+    // Limpiar timestamps
+    startTimeRef.current = null;
+    lastUpdateRef.current = Date.now();
+    
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-  };
+  }, [swRegistered, sendSWMessage, releaseWakeLock, generateSessionInsights, completedSessions, timeLeft, saveSession, purpose, theme, totalFocusTime, currentSlide]);
 
   // Función para resetear
   const resetFocus = () => {
     stopFocus();
     setCompletedSessions(0);
     setTotalFocusTime(0);
+  };
+
+  // Funciones del widget
+  const handleWidgetPositionChange = (newPosition: { x: number; y: number }) => {
+    setWidgetPosition(newPosition);
+    localStorage.setItem('widget-position', JSON.stringify(newPosition));
+  };
+
+  const handleWidgetSizeChange = (newSize: 'small' | 'large') => {
+    setWidgetSize(newSize);
+    localStorage.setItem('widget-size', newSize);
+  };
+
+  const handleMantrasToggle = () => {
+    setShowMantras(!showMantras);
+    localStorage.setItem('widget-show-mantras', JSON.stringify(!showMantras));
+  };
+
+  const handleWidgetClose = () => {
+    setShowWidget(false);
   };
 
   // Función para pantalla completa
@@ -484,7 +785,7 @@ const PomodoroFocus = () => {
     }, currentStep.duration);
 
     return () => clearTimeout(timer);
-  }, [showSacredIntro, introStep]);
+  }, [showSacredIntro, introStep, sacredIntroSteps, startFocus]);
 
   // Efecto para simular progresión del estado de flow
   useEffect(() => {
@@ -527,13 +828,107 @@ const PomodoroFocus = () => {
     return () => clearInterval(slideInterval);
   }, [isStarted, isPaused, mantras.length, readingSpeed]);
 
-  // Efecto para detectar tema automáticamente
+  // Efecto para detectar tema y sugerir música automáticamente
   useEffect(() => {
     if (purpose) {
       const detectedTheme = detectTheme(purpose);
       setTheme(detectedTheme);
+      
+      // Sugerir música según el tema detectado
+      const suggestedMusic = getSuggestedMusic(detectedTheme);
+      setSelectedMusic(suggestedMusic);
     }
   }, [purpose]);
+
+  // Efecto para manejar visibilidad y eventos del navegador
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      visibilityRef.current = !document.hidden;
+      
+      if (!document.hidden && isStarted && !isPaused) {
+        // Cuando la página se vuelve visible, sincronizar tiempo
+        console.log('🔄 Página visible - sincronizando tiempo...');
+        syncTimeWithReality();
+      }
+    };
+
+    const handleFocus = () => {
+      if (isStarted && !isPaused) {
+        console.log('🎯 Ventana enfocada - sincronizando tiempo...');
+        syncTimeWithReality();
+      }
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isStarted && !isPaused) {
+        e.preventDefault();
+        e.returnValue = '¿Estás seguro de que quieres salir? Tu sesión de enfoque sagrado se perderá.';
+        return e.returnValue;
+      }
+    };
+
+    // Manejar cuando el Wake Lock se libera automáticamente
+    const handleWakeLockRelease = () => {
+      if (isStarted && !isPaused) {
+        console.log('🔄 Wake Lock liberado - reactivando...');
+        requestWakeLock();
+      }
+    };
+
+    // Agregar event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    if (wakeLockRef.current) {
+      wakeLockRef.current.addEventListener('release', handleWakeLockRelease);
+    }
+
+    return () => {
+      // Limpiar event listeners
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      if (wakeLockRef.current) {
+        wakeLockRef.current.removeEventListener('release', handleWakeLockRelease);
+      }
+      
+      // Limpiar intervalos
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        if ((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup) {
+          clearInterval((intervalRef.current as NodeJS.Timeout & { backup?: NodeJS.Timeout }).backup);
+        }
+      }
+      
+      // Liberar Wake Lock
+      releaseWakeLock();
+    };
+  }, [isStarted, isPaused, syncTimeWithReality]);
+
+  // Efecto para escuchar eventos del Service Worker
+  useEffect(() => {
+    const handleSWTimerUpdate = (event: CustomEvent) => {
+      const { timeLeft, flowPhase: newFlowPhase, flowIntensity: newFlowIntensity } = event.detail;
+      setTimeLeft(timeLeft);
+      setFlowPhase(newFlowPhase);
+      setFlowIntensity(newFlowIntensity);
+    };
+
+    const handleSWTimerComplete = () => {
+      console.log('⏰ Timer completado desde Service Worker');
+      stopFocus();
+    };
+
+    window.addEventListener('sw-timer-update', handleSWTimerUpdate as EventListener);
+    window.addEventListener('sw-timer-complete', handleSWTimerComplete as EventListener);
+
+    return () => {
+      window.removeEventListener('sw-timer-update', handleSWTimerUpdate as EventListener);
+      window.removeEventListener('sw-timer-complete', handleSWTimerComplete as EventListener);
+    };
+  }, [stopFocus]);
 
   // Efecto para limpiar intervalos
   useEffect(() => {
@@ -542,6 +937,33 @@ const PomodoroFocus = () => {
         clearInterval(intervalRef.current);
       }
     };
+  }, []);
+
+  // Efecto para cargar preferencias del widget
+  useEffect(() => {
+    const savedPosition = localStorage.getItem('widget-position');
+    const savedSize = localStorage.getItem('widget-size');
+    const savedMantras = localStorage.getItem('widget-show-mantras');
+
+    if (savedPosition) {
+      try {
+        setWidgetPosition(JSON.parse(savedPosition));
+      } catch {
+        console.log('Error loading widget position');
+      }
+    }
+
+    if (savedSize) {
+      setWidgetSize(savedSize as 'small' | 'large');
+    }
+
+    if (savedMantras) {
+      try {
+        setShowMantras(JSON.parse(savedMantras));
+      } catch {
+        console.log('Error loading mantras preference');
+      }
+    }
   }, []);
 
   // Efecto para pantalla completa
@@ -705,7 +1127,7 @@ const PomodoroFocus = () => {
           transition={{ duration: 1, delay: 2.5 }}
         >
           <p className="text-lg font-light opacity-80">
-            "En el silencio del enfoque, tu alma se ha expresado."
+            &ldquo;En el silencio del enfoque, tu alma se ha expresado.&rdquo;
           </p>
         </motion.div>
       </div>
@@ -721,11 +1143,11 @@ const PomodoroFocus = () => {
         {/* Audio de introducción */}
         <audio 
           ref={audioRef}
-          src="/audio/432hz.mp3" 
+          src={`/audio/${currentMusic.fileName}`}
           preload="auto"
           autoPlay={!isMuted}
           loop
-          onError={() => console.log('Audio no disponible')}
+          onError={() => console.log(`Audio ${currentMusic.name} no disponible`)}
         />
 
         {/* Botón para saltar intro */}
@@ -771,11 +1193,11 @@ const PomodoroFocus = () => {
                 </div>
                 
                 <div className="text-2xl md:text-4xl lg:text-5xl font-light leading-relaxed max-w-4xl mx-auto px-6">
-                  {currentStep.text.includes('"') ? (
+                  {currentStep.text.includes('&ldquo;') ? (
                     <div>
-                      <div className="mb-4">{currentStep.text.split('"')[0]}</div>
-                      <div className="italic text-3xl opacity-90">"{currentStep.text.split('"')[1]}"</div>
-                      <div className="mt-4">{currentStep.text.split('"')[2]}</div>
+                                              <div className="mb-4">{currentStep.text.split('&ldquo;')[0]}</div>
+                        <div className="italic text-3xl opacity-90" dangerouslySetInnerHTML={{__html: `&ldquo;${currentStep.text.split('&ldquo;')[1]?.split('&rdquo;')[0]}&rdquo;`}} />
+                        <div className="mt-4">{currentStep.text.split('&rdquo;')[1]}</div>
                     </div>
                   ) : (
                     currentStep.text
@@ -820,16 +1242,27 @@ const PomodoroFocus = () => {
         ref={containerRef}
         className={`min-h-screen bg-gradient-to-br ${currentTheme.bgGradient} text-white flex flex-col items-center justify-center p-6 relative overflow-hidden`}
       >
-        {/* Audio 432Hz */}
+        {/* Audio de enfoque */}
         <audio 
           ref={audioRef}
-          src="/audio/432hz.mp3" 
+          src={`/audio/${currentMusic.fileName}`}
           preload="auto"
-          onError={() => console.log('Audio no disponible')}
+          onError={() => console.log(`Audio ${currentMusic.name} no disponible`)}
         />
         
         {/* Controles superiores */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+          {/* Información de música actual */}
+          <div className="bg-black/20 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2">
+            <span className="text-lg">{currentMusic.emoji}</span>
+            <div className="text-xs">
+              <div className="font-medium">{currentMusic.name.split(' - ')[0]}</div>
+              {currentMusic.frequency && (
+                <div className="opacity-70">{currentMusic.frequency}</div>
+              )}
+            </div>
+          </div>
+          
           <Button
             variant="outline"
             size="sm"
@@ -927,13 +1360,23 @@ const PomodoroFocus = () => {
 
         {/* Temporizador */}
         <div className="absolute top-16 left-1/2 transform -translate-x-1/2 text-center z-50">
-          <div className="text-4xl font-bold mb-2">
+          <div className="text-4xl font-bold mb-2 flex items-center justify-center gap-2">
             {formatTime(timeLeft)}
+            {/* Indicador de sincronización */}
+            <motion.div
+              className="w-2 h-2 bg-green-400 rounded-full"
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              title="Temporizador sincronizado - resistente a cambios de tab"
+            />
           </div>
           <Progress 
             value={getProgress()} 
             className="w-48 h-2 bg-white/20"
           />
+          <div className="text-xs opacity-60 mt-1">
+            🔒 Protegido contra interrupciones
+          </div>
         </div>
 
         {/* Presentación principal */}
@@ -1056,7 +1499,67 @@ const PomodoroFocus = () => {
             <Card className="skill-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  ⚙️ Configuración
+                  🎵 Música de Enfoque
+                </CardTitle>
+                <CardDescription>
+                  Elige la frecuencia y tipo de música para tu sesión
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Select value={selectedMusic} onValueChange={setSelectedMusic}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MUSIC_OPTIONS.map((music) => (
+                        <SelectItem key={music.id} value={music.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{music.emoji}</span>
+                            <span>{music.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {currentMusic && (
+                    <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">{currentMusic.emoji}</span>
+                        <div>
+                          <div className="font-medium">{currentMusic.name}</div>
+                          {currentMusic.frequency && (
+                            <div className="text-sm text-purple-600 font-medium">
+                              {currentMusic.frequency}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">{currentMusic.description}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {currentMusic.benefits.map((benefit, index) => (
+                          <span
+                            key={index}
+                            className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full"
+                          >
+                            {benefit}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-3 text-xs text-gray-500">
+                        📁 Archivo: /public/audio/{currentMusic.fileName}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="skill-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  ⚙️ Configuración Avanzada
                 </CardTitle>
                 <CardDescription>
                   Personaliza tu experiencia de enfoque
@@ -1092,7 +1595,7 @@ const PomodoroFocus = () => {
                       className="rounded"
                     />
                     <label htmlFor="muted" className="text-sm">
-                      Iniciar sin audio 432Hz
+                      Iniciar sin audio de fondo
                     </label>
                   </div>
                 </div>
@@ -1101,17 +1604,40 @@ const PomodoroFocus = () => {
 
             <Card className="skill-card">
               <CardContent className="pt-6">
-                <Button 
-                  size="lg" 
-                  onClick={startSacredIntro}
-                  disabled={!purpose.trim()}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white h-12 text-lg"
-                >
-                  🕉️ Iniciar Enfoque Sagrado
-                </Button>
+                <div className="space-y-3">
+                  <Button 
+                    size="lg" 
+                    onClick={startSacredIntro}
+                    disabled={!purpose.trim()}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white h-12 text-lg"
+                  >
+                    🕉️ Iniciar Enfoque Sagrado
+                  </Button>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      size="lg"
+                      onClick={startRandomFocus}
+                      className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white h-10"
+                    >
+                      🎲 Aleatorio
+                    </Button>
+                    
+                    <Button 
+                      size="lg"
+                      onClick={() => setShowWidget(!showWidget)}
+                      variant="outline"
+                      className="flex-1 h-10"
+                      disabled={!isStarted}
+                    >
+                      {showWidget ? '📱 Ocultar Widget' : '📱 Mostrar Widget'}
+                    </Button>
+                  </div>
+                </div>
+                
                 {!purpose.trim() && (
                   <p className="text-sm text-gray-500 text-center mt-2">
-                    Escribe tu propósito para comenzar
+                    Escribe tu propósito para comenzar normalmente, o usa el inicio aleatorio
                   </p>
                 )}
               </CardContent>
@@ -1136,19 +1662,19 @@ const PomodoroFocus = () => {
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">
-                      {stats.totalMinutes || Math.round(getMockSessions().reduce((acc: number, s: any) => acc + s.duration, 0) / 60)}
+                      {stats.totalMinutes || Math.round(getMockSessions().reduce((acc: number, s) => acc + s.duration, 0) / 60)}
                     </div>
                     <div className="text-sm text-gray-600">Minutos totales</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
                     <div className="text-2xl font-bold text-green-600">
-                      {stats.totalMantras || getMockSessions().reduce((acc: number, s: any) => acc + s.mantrasShown, 0)}
+                      {stats.totalMantras || getMockSessions().reduce((acc: number, s) => acc + s.mantrasShown, 0)}
                     </div>
                     <div className="text-sm text-gray-600">Mantras mostrados</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg">
                     <div className="text-2xl font-bold text-orange-600">
-                      {stats.totalSessions || Math.round(getMockSessions().reduce((acc: number, s: any) => acc + s.duration, 0) / 60 / 25)}
+                      {stats.totalSessions || Math.round(getMockSessions().reduce((acc: number, s) => acc + s.duration, 0) / 60 / 25)}
                     </div>
                     <div className="text-sm text-gray-600">Pomodoros</div>
                   </div>
@@ -1164,7 +1690,7 @@ const PomodoroFocus = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {(getRecentSessions(3).length > 0 ? getRecentSessions(3) : getMockSessions().slice(0, 3)).map((session: any) => (
+                  {(getRecentSessions(3).length > 0 ? getRecentSessions(3) : getMockSessions().slice(0, 3)).map((session) => (
                     <div key={session.id} className="p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
@@ -1217,6 +1743,32 @@ const PomodoroFocus = () => {
             </Card>
           </div>
         </div>
+
+        {/* Widget flotante */}
+        <FloatingWidget
+          isVisible={showWidget && (isStarted || isPaused)}
+          timeLeft={timeLeft}
+          isRunning={!isPaused}
+          isPaused={isPaused}
+          currentMantra={mantras[currentSlide] || "Preparando tu enfoque sagrado..."}
+          currentTheme={currentTheme}
+          currentMusic={currentMusic}
+          flowPhase={flowPhase}
+          flowIntensity={flowIntensity}
+          purpose={purpose}
+          size={widgetSize}
+          showMantras={showMantras}
+          isMuted={isMuted}
+          position={widgetPosition}
+          onPositionChange={handleWidgetPositionChange}
+          onSizeChange={handleWidgetSizeChange}
+          onMantrasToggle={handleMantrasToggle}
+          onMuteToggle={() => setIsMuted(!isMuted)}
+          onPause={pauseFocus}
+          onResume={resumeFocus}
+          onStop={stopFocus}
+          onClose={handleWidgetClose}
+        />
       </div>
     </div>
   );
