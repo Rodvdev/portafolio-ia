@@ -392,55 +392,55 @@ const PomodoroFocus = () => {
   const sacredIntroSteps = useMemo(() => [
     {
       text: getContextualGreeting(theme),
-      duration: 3000
+      duration: 8000
     },
     {
       text: "Estás por iniciar un ritual que va más allá del trabajo. Este momento es una puerta.",
-      duration: 4000
+      duration: 9000
     },
     {
       text: "Una puerta hacia tu Yo Superior, hacia Dios, la conciencia, el universo… llámalo como quieras.",
-      duration: 4000
+      duration: 9000
     },
     {
       text: "Aquí el secreto no es solo enfocarte. Es entregarte.",
-      duration: 3000
+      duration: 8000
     },
     {
       text: "Es dejar que aquello que sabe más que tú —eso que te guía desde dentro— actúe a través de ti.",
-      duration: 4000
+      duration: 9000
     },
     {
       text: "Cuando estás presente, cuando desapareces en lo que haces, entras en estado de FLOW.",
-      duration: 4000
+      duration: 9000
     },
     {
       text: "El ego se disuelve, la mente se aquieta, y tu esencia toma el control.",
-      duration: 4000
+      duration: 9000
     },
     {
       text: '&ldquo;Perderte a ti mismo es encontrarte con Dios.&rdquo; — Sabiduría ancestral',
-      duration: 4000
+      duration: 9000
     },
     {
       text: "Este enfoque no es una obligación. Es una oportunidad.",
-      duration: 3000
+      duration: 8000
     },
     {
       text: "De recordar quién eres. De crear, servir, amar, con toda tu energía enfocada.",
-      duration: 4000
+      duration: 9000
     },
     {
       text: getDisciplineMessage(theme),
-      duration: 4000
+      duration: 9000
     },
     {
       text: "Que tu propósito guíe tus manos. Que tu alma sea quien se exprese.",
-      duration: 4000
+      duration: 9000
     },
     {
       text: getFinalMessage(theme),
-      duration: 3000
+      duration: 8000
     }
   ], [theme]);
 
