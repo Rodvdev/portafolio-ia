@@ -313,7 +313,8 @@ const PomodoroFocus = () => {
   // Variable eliminada: canStartRandom no utilizada
   
   // Referencias
-  const intervalRef = useRef<(NodeJS.Timeout & { backup?: NodeJS.Timeout }) | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const backupIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -595,26 +596,21 @@ const PomodoroFocus = () => {
     }, 1000);
     
     // Temporizador de respaldo cada 5 segundos para recuperación
-    const backupInterval = setInterval(() => {
+    backupIntervalRef.current = setInterval(() => {
       if (!isPaused && isStarted) {
         syncTimeWithReality();
       }
     }, 5000);
-    
-    // Guardar referencia del temporizador de respaldo
-    if (intervalRef.current) {
-      intervalRef.current.backup = backupInterval;
-    }
   }, [isMuted, isPaused, isStarted, swRegistered, sendSWMessage, requestNotificationPermission, theme, selectedMusic, syncTimeWithReality]);
 
   // Función para pausar
   const pauseFocus = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
-      // Limpiar temporizador de respaldo también
-      if (intervalRef.current.backup) {
-        clearInterval(intervalRef.current.backup);
-      }
+    }
+    // Limpiar temporizador de respaldo también
+    if (backupIntervalRef.current) {
+      clearInterval(backupIntervalRef.current);
     }
     setIsPaused(true);
     if (audioRef.current) {
@@ -650,15 +646,11 @@ const PomodoroFocus = () => {
       syncTimeWithReality();
     }, 1000);
     
-    const backupInterval = setInterval(() => {
+    backupIntervalRef.current = setInterval(() => {
       if (!isPaused && isStarted) {
         syncTimeWithReality();
       }
     }, 5000);
-    
-    if (intervalRef.current) {
-      intervalRef.current.backup = backupInterval;
-    }
   };
 
   // Función para generar insights de la sesión
@@ -692,10 +684,10 @@ const PomodoroFocus = () => {
   const stopFocus = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
-      // Limpiar temporizador de respaldo también
-      if (intervalRef.current.backup) {
-        clearInterval(intervalRef.current.backup);
-      }
+    }
+    // Limpiar temporizador de respaldo también
+    if (backupIntervalRef.current) {
+      clearInterval(backupIntervalRef.current);
     }
     
     // Detener timer en Service Worker
@@ -901,9 +893,9 @@ const PomodoroFocus = () => {
       // Limpiar intervalos
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
-        if (intervalRef.current.backup) {
-          clearInterval(intervalRef.current.backup);
-        }
+      }
+      if (backupIntervalRef.current) {
+        clearInterval(backupIntervalRef.current);
       }
       
       // Liberar Wake Lock
