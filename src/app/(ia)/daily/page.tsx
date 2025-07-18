@@ -445,7 +445,7 @@ export default function DailyPage() {
                   🍅 Enfoque Profundo
                 </CardTitle>
                 <CardDescription>
-                  Técnica Pomodoro para reflexión concentrada
+                  Técnica Pomodoro avanzada con mantras
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -483,6 +483,17 @@ export default function DailyPage() {
                   
                   <div className="text-xs text-gray-500">
                     Sesiones completadas: {completedSessions}
+                  </div>
+                  
+                  <div className="pt-4 border-t">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => window.location.href = '/focus'}
+                    >
+                      🚀 Enfoque Avanzado
+                    </Button>
                   </div>
                 </div>
               </CardContent>
